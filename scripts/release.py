@@ -53,10 +53,10 @@ def warn(message: str) -> None:
     print(f"  ! {message}")
 
 
-def run(command, env=None, capture=False):
+def run(command, env=None, capture=False, cwd=None):
     return subprocess.run(
         command,
-        cwd=ROOT,
+        cwd=cwd or ROOT,
         env=env or os.environ.copy(),
         capture_output=capture,
         text=True,
@@ -287,25 +287,51 @@ def step_verify(args, version):
         raise Abort("核验", "等待超时：索引还没刷新", "稍后可用 --verify-only 重新核验")
 
     package = f"{PACKAGE}=={version}"
-    probe = f"import {PACKAGE}; print({PACKAGE}.__version__)"
-    if (
-        run(
-            [
-                "uv",
-                "run",
-                "--no-project",
-                "--quiet",
-                f"--with={package}",
-                "--with=pytest",
-                "python",
-                "-c",
-                probe,
-            ]
-        ).returncode
-        != 0
-    ):
-        raise Abort("核验", "从索引装不上这个版本")
-    ok("从索引安装并导入成功")
+    probe = f"import {PACKAGE}; print({PACKAGE}.__version__); print({PACKAGE}.__file__)"
+    neutral = tempfile.mkdtemp(prefix="pixelclass-verify-")
+    try:
+        # 必须在**干净环境里**核验：仓库里的核验会被本地可编辑安装顶替，变成"自己验自己"
+        # （0.1.0 就是这么骗过我的）。只加 --no-project 不够——当前激活的 venv 里就有本地
+        # 可编辑安装，所以这里建一个全新的空 venv，用索引上的包把它装满。
+        venv = os.path.join(neutral, "venv")
+        if run(["uv", "venv", venv], cwd=neutral).returncode != 0:
+            raise Abort("核验", "uv venv 失败")
+        python = os.path.join(venv, "bin", "python")
+        env = {
+            **os.environ,
+            "SDL_VIDEODRIVER": "dummy",
+            "SDL_AUDIODRIVER": "dummy",
+            "PYGAME_HIDE_SUPPORT_PROMPT": "1",
+        }
+        env.pop("PYTHONPATH", None)
+        env.pop("VIRTUAL_ENV", None)
+        for attempt in range(1, 7):
+            # --refresh 绕开本机索引缓存，确保拿到的是刚传上去的产物
+            installed = run(
+                ["uv", "pip", "install", "--python", python, "--refresh", package],
+                env=env,
+                capture=True,
+                cwd=neutral,
+            )
+            result = (
+                run([python, "-c", probe], env=env, capture=True, cwd=neutral)
+                if installed.returncode == 0
+                else installed
+            )
+            lines = [line.strip() for line in (result.stdout or "").splitlines() if line.strip()]
+            if result.returncode == 0 and lines:
+                installed_version, location = lines[0], lines[-1]
+                if installed_version != version:
+                    raise Abort("核验", f"索引上装到的是 {installed_version}，期望 {version}")
+                if os.path.abspath(location).startswith(os.path.abspath(ROOT)):
+                    raise Abort("核验", f"装到的其实是本地源码：{location}", "核验要在项目目录之外进行")
+                ok(f"从索引安装成功（{installed_version}）：{location}")
+                return
+            warn(f"第 {attempt} 次核验还没成功，等索引刷新…")
+            time.sleep(10)
+        raise Abort("核验", f"从索引装不上 {version}", "稍后用 --verify-only 重试")
+    finally:
+        shutil.rmtree(neutral, ignore_errors=True)
 
 
 def main(argv=None):
