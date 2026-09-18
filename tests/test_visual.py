@@ -102,6 +102,58 @@ def test_animation_frame_change_is_visible(_fresh_scene):
     assert colors[0] != colors[-1]
 
 
+def test_manual_frame_write_stops_the_auto_advance(_fresh_scene):
+    """课堂写法：每帧写一次 `frame` 切换两张图（卡片"可买 / 置灰"）——不能被自动播放打断。
+
+    真实案例：植物大战僵尸的卡槽卡片每帧写 `self.frame = sun_point < self.coin`，
+    而两张图的序列同时在自动播放，于是卡片每隔约 4~5 帧闪一次灰图。
+    """
+
+    class Card(pc.Character):
+        manual = True
+
+        def update(self):
+            if self.manual:
+                self.frame = 0  # 等同于 demo 里的 change_card()
+
+    card = Card([_surface((255, 0, 0)), _surface((0, 0, 255))])
+    card.dt = 0.01
+    pixels = set()
+    for _ in range(12):
+        pc.update()
+        image = card.visual.display_image()
+        pixels.add(tuple(image.get_at((8, 8)))[:3])
+    assert pixels == {(255, 0, 0)}, f"卡片在频闪：{pixels}"
+    assert card.frame == 0
+    assert card.visual.playing is False, "手动写 frame 等于接管播放"
+
+    # 不再每帧写 frame 之后，play_anim() 能恢复自动播放
+    card.manual = False
+    card.play_anim()
+    seen = set()
+    for _ in range(6):
+        pc.update()
+        image = card.visual.display_image()
+        seen.add(tuple(image.get_at((8, 8)))[:3])
+    assert len(seen) > 1, "play_anim() 之后应当继续自动播放"
+
+
+def test_manual_frame_seek_then_play_resumes_from_there(_fresh_scene):
+    hero = pc.Character([_surface((255, 0, 0)), _surface((0, 0, 255)), _surface((0, 255, 0))])
+    hero.dt = 0.01
+    hero.frame = 2
+    assert hero.frame == 2 and hero.visual.playing is False
+    pc.update()
+    assert hero.frame == 2, "手动指定的帧不会被自动播放顶掉"
+
+    hero.play_anim()
+    seen = set()
+    for _ in range(6):
+        pc.update()
+        seen.add(hero.frame)
+    assert len(seen) > 1, "play_anim() 后从第 2 帧继续播"
+
+
 def test_alpha_survives_recompute_on_scaled_sprite(_fresh_scene):
     """虚影（缩放 + 半透明）不能画着画着变回不透明。
 

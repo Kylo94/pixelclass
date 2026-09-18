@@ -321,10 +321,18 @@ class Sprite:
 
     @frame.setter
     def frame(self, index: int) -> None:
+        """手动指定当前帧：**同时接管播放**（自动播放暂停，想继续用 `play_anim()`）。
+
+        为什么必须接管：多帧贴图默认是在自动播放的。课堂里常见写法是每帧写一次
+        `card.frame = 买得起吗` 来切换"可买 / 置灰"两张图；如果自动播放照旧推进，
+        两张图就会打架，卡片以每帧的节奏闪（实测每约 4~5 帧闪一次灰图）。
+        写 `frame` 视为"我要自己控制这一帧"，与 `pause_anim()` 同义。
+        """
         setter = getattr(self.strategy, "set_frame", None)
         if setter is not None:
             setter(index)
-            self.frame_dirty = True  # 手动换帧同样要让显示缓存失效
+            self.frame_dirty = True  # 手动换帧：显示缓存要失效
+            self.playing = False  # 手动接管：停住自动播放（否则会和自动换帧打架）
 
     @property
     def state(self) -> str:
