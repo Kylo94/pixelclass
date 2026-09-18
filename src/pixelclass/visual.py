@@ -264,7 +264,11 @@ class Sprite:
             return AnimatorStrategy(source)
         if isinstance(source, (list, tuple)):
             return ListSpriteStrategy(source)
-        if hasattr(source, "render"):  # 瓦片地图（整图策略）
+        if isinstance(source, str) and source.lower().endswith(".tmx"):
+            from .worldmap import TiledMap  # 延迟导入，避免模块级成环
+
+            return TiledMapStrategy(TiledMap(source))
+        if hasattr(source, "render"):  # 瓦片地图对象（整图策略）
             return TiledMapStrategy(source)
         return EasySpriteStrategy(source)
 

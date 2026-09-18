@@ -95,7 +95,7 @@ from .window import Window
 World = Scene
 Screen = Window
 GameObject = Entity
-NewGameObject = Entity  # 兼容名：窗口对象（相机相关构造参数在相机里程碑补齐）
+NewGameObject = Entity  # 兼容名：老讲义里出现过的基类名
 
 _FRAMEWORK_NAMES = [
     # 场景与主循环（spec 01）

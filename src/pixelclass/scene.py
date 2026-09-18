@@ -6,6 +6,8 @@
 
 from typing import Any, Callable, Iterator, List, Optional
 
+import weakref
+
 import pymunk
 
 from .camera import Camera
@@ -70,6 +72,7 @@ class Scene:
 
     def __init__(self, name: str = "") -> None:
         self.name = name
+        _LIVE.add(self)
         self.space = pymunk.Space()
         self.gravity = vec(0, 0)  # spec 01 §2.1：默认无重力
         self.space.gravity = to_cp(self.gravity)
@@ -111,8 +114,50 @@ class Scene:
         for group in list(self.tiles):
             group.sync()
 
+    def teardown_space(self) -> None:
+        """把当前物理空间里的形状 / 刚体 / 约束全部移除。
+
+        为什么必须显式移除：把带 cffi 回调的物理对象留给解释器退出时销毁，
+        在 Python 3.12 上会**段错误**（实测：同一段程序显式清理后退出码 0，
+        不清理则 139）。所以 `done()` 与重新 `setup()` 都要先走这里。
+        """
+        space = self.space
+        try:
+            if space.shapes:
+                space.remove(*list(space.shapes))
+            if space.bodies:
+                space.remove(*list(space.bodies))
+            if space.constraints:
+                space.remove(*list(space.constraints))
+        except Exception:  # noqa: BLE001 - 逐个兜底，保证一定能拆干净
+            for shape in list(space.shapes):
+                try:
+                    space.remove(shape)
+                except Exception:  # noqa: BLE001
+                    pass
+            for body in list(space.bodies):
+                try:
+                    space.remove(body)
+                except Exception:  # noqa: BLE001
+                    pass
+            for constraint in list(space.constraints):
+                try:
+                    space.remove(constraint)
+                except Exception:  # noqa: BLE001
+                    pass
+
+    def dispose(self) -> None:
+        """彻底拆掉场景（`done()` 会调用它）。"""
+        self.teardown_space()
+        self.entities.clear()
+        self.visuals.clear()
+        self.rigids.clear()
+        self.tiles.clear()
+        self.lines.clear()
+
     def reset(self, size: tuple) -> None:
         """重新初始化该场景（换一套空间与集合，保留相机对象本身）。"""
+        self.dispose()
         self.space = pymunk.Space()
         self.space.gravity = to_cp(self.gravity)
         self.entities.clear()
@@ -125,8 +170,22 @@ class Scene:
 
     def clear(self) -> None:
         """清空场景内容（保留重力与子步设置）。"""
+        self.dispose()
         self.space = pymunk.Space()
         self.space.gravity = to_cp(self.gravity)
         self.entities.clear()
         self.visuals.clear()
         self.lines.clear()
+
+
+#: 进程内所有活着的场景（`done()` 要把它们全部拆掉）
+_LIVE: "weakref.WeakSet[Scene]" = weakref.WeakSet()
+
+
+def dispose_all() -> int:
+    """拆掉所有活着的场景，返回拆掉的个数（`done()` 用）。"""
+    count = 0
+    for scene in list(_LIVE):
+        scene.dispose()
+        count += 1
+    return count

@@ -96,8 +96,14 @@ def update(world: Any = None) -> None:
 
 
 def done() -> None:
-    """结束程序：关闭窗口与 pygame。"""
+    """结束程序：拆掉物理空间，再关闭窗口与 pygame。
+
+    必须先把物理对象从空间里移除：留给解释器退出时销毁在 Python 3.12 上会段错误。
+    """
     global _window
+    from .scene import dispose_all
+
+    dispose_all()
     pygame.quit()
     _window = None
 
