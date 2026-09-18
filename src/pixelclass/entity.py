@@ -298,6 +298,43 @@ class Entity:
         else:
             self.shift_by(delta.normalize() * step)
 
+    def distance(self, other: Any, *y: Any) -> float:
+        """到另一个对象（或某个坐标）的直线距离（像素）。
+
+        目标写法（spec 02 §4）：
+
+            hero.distance(enemy)         # 另一个对象，用它当前的 pos
+            hero.distance((100, 50))     # 一个坐标
+            hero.distance(vec(100, 50))  # 向量
+            hero.distance(100, 50)       # 分开写 x, y
+
+        只算数，不移动、不转向、不清速度。
+        """
+        if y:
+            goal: Any = (other, y[0])
+        else:
+            goal = getattr(other, "pos", None)  # 是对象就取它的位置
+            if goal is None:
+                goal = other
+        if not isinstance(goal, (list, tuple, vec)) or len(goal) != 2:
+            raise TypeError(
+                bilingual(
+                    f"distance 的目标看不懂：{other!r}。可以给另一个对象、坐标 (x, y)，或分开写 distance(x, y)",
+                    f"Cannot read the distance target {other!r}; pass an object, "
+                    f"a point (x, y), or distance(x, y)",
+                )
+            )
+        try:
+            target = vec(float(goal[0]), float(goal[1]))
+        except (TypeError, ValueError):
+            raise TypeError(
+                bilingual(
+                    f"distance 的目标不是两个数：{other!r}",
+                    f"The distance target is not a pair of numbers: {other!r}",
+                )
+            ) from None
+        return float((target - self._pos).length())
+
     @property
     def scl(self) -> Any:
         return self._scl

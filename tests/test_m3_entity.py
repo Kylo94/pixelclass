@@ -89,6 +89,47 @@ def test_pos_paths_and_speed_semantics():
     assert tuple(hero.velocity) == (5.0, 5.0)
 
 
+def test_distance_to_object_and_coordinates():
+    hero = pc.Character(size=(16, 16))
+    hero.goto(0, 0)
+    enemy = pc.Character(size=(16, 16))
+    enemy.goto(30, 40)
+
+    assert hero.distance(enemy) == pytest.approx(50.0), "3-4-5 直角三角形"
+    assert enemy.distance(hero) == pytest.approx(50.0), "距离是对称的"
+
+    # 坐标的四种写法
+    assert hero.distance(30, 40) == pytest.approx(50.0)
+    assert hero.distance((30, 40)) == pytest.approx(50.0)
+    assert hero.distance([30, 40]) == pytest.approx(50.0)
+    assert hero.distance(pc.vec(30, 40)) == pytest.approx(50.0)
+
+    assert hero.distance(hero) == 0.0
+    assert hero.distance(0, 0) == 0.0
+
+    # 跟着对象走：目标动了，距离就变
+    enemy.goto(0, 10)
+    assert hero.distance(enemy) == pytest.approx(10.0)
+
+
+def test_distance_does_not_move_or_clear_velocity():
+    hero = pc.Character(size=(16, 16))
+    hero.goto(0, 0)
+    hero.velocity = (5, 5)
+    hero.distance(100, 100)
+    assert tuple(hero.pos) == (0.0, 0.0)
+    assert tuple(hero.velocity) == (5.0, 5.0), "只算数，不动速度"
+    assert tuple(hero.dir) == (1.0, 0.0), "也不转向"
+
+
+def test_distance_bad_target_raises_readable_error():
+    hero = pc.Character(size=(16, 16))
+    for bad in (None, "abc", 42, (1, 2, 3)):
+        with pytest.raises(TypeError) as error:
+            hero.distance(bad)
+        assert "distance" in str(error.value), "错误信息要能看出是哪个接口"
+
+
 def test_x_y_setters_and_sync_pos():
     hero = pc.Character(size=(16, 16))
     hero.velocity = (9, 9)
