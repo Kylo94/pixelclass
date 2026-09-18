@@ -2,6 +2,20 @@
 
 本项目遵循[语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.1.1] - 2026-09-18
+
+### 修复
+
+- **0.1.0 的 wheel 缺少子包**：`physics/`、`worldmap/`、`ui/` 没有被打进发行包，
+  装上去 `import pixelclass` 就会 `ModuleNotFoundError`。打包配置改为自动发现 `src/` 下的
+  所有子包；同时给发布流程加了防呆（见下）。
+
+### 变更
+
+- 发布脚本的"全新环境安装测试"现在会**先断言导入到的是装好的包**（而不是本地 `src/`），
+  并显式覆盖 pytest 的 `pythonpath` 设置——0.1.0 就是因为这两点被蒙过去才发出去的。
+- 新增 `tests/test_packaging.py`：静态校验打包配置覆盖了 `src/pixelclass/` 下所有子包。
+
 ## [0.1.0] - 2026-09-18
 
 首版实现。规格先行的净室实现：`docs/spec/` 是唯一实现依据，`acceptance/` 是行为验收基线。

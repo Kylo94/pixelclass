@@ -37,11 +37,12 @@ dev = ["black", "flake8", "mypy", "pytest", "build", "twine"]
 Repository = "https://github.com/Kylo94/pixelclass"
 
 [tool.setuptools]
-packages = ["pixelclass"]
 include-package-data = true
 
-[tool.setuptools.package-dir]
-"" = "src"
+# 自动发现 src/ 下的所有子包（physics / worldmap / ui 曾经漏掉过，见 0.1.1 修复）
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["pixelclass*"]
 
 [tool.setuptools.dynamic]
 version = { attr = "pixelclass._version.__version__" }

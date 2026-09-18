@@ -225,7 +225,23 @@ def step_check_artifacts(args, files):
         env["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
         env["PIXELCLASS_TEST_INSTALLED"] = "1"  # 让测试用已安装的包，而不是 src/
         env.pop("PYTHONPATH", None)
-        if run([python, "-m", "pytest", "-q"], env=env).returncode != 0:
+
+        # 先断言"导入到的是装好的包"：0.1.0 就是被 pythonpath 设置蒙过去的——
+        # pytest 用了本地 src/，安装测试假通过，带着缺子包的轮子发了出去
+        probe = run([python, "-c", f"import {PACKAGE}; print({PACKAGE}.__file__)"], env=env, capture=True)
+        location = (probe.stdout or "").strip().splitlines()[-1] if probe.stdout else ""
+        if probe.returncode != 0 or not location:
+            raise Abort("安装测试", f"装好的包导入失败：{(probe.stderr or '').strip()[-200:]}")
+        if os.path.abspath(location).startswith(os.path.abspath(ROOT)):
+            raise Abort(
+                "安装测试",
+                f"测试用的是本地源码而不是装好的包：{location}",
+                "检查 pyproject 的 pythonpath 设置与 PYTHONPATH",
+            )
+        ok(f"导入路径确认是安装产物：{location}")
+
+        # -o pythonpath= 覆盖 pyproject 里的 pythonpath 设置，确保测试导入的是安装产物
+        if run([python, "-m", "pytest", "-q", "-o", "pythonpath="], env=env).returncode != 0:
             raise Abort("安装测试", "装了产物之后测试没通过", "本地能过、装了不过通常是打包漏文件")
         ok("全新环境安装产物后测试通过")
     finally:
