@@ -17,6 +17,27 @@ from .error_help import bilingual
 DEFAULT_FRAME_TIME = 1 / 12  # 帧序列默认每帧停留时间（秒）
 
 
+def _check_frame_time(value: Any) -> float:
+    """校验每帧停留时间：必须是**正数**秒（0 会让帧推进变成死循环）。"""
+    try:
+        seconds = float(value)
+    except (TypeError, ValueError):
+        raise TypeError(
+            bilingual(
+                f"每帧停留时间必须是数字（秒），收到 {value!r}",
+                f"Frame time must be a number of seconds; got {value!r}",
+            )
+        ) from None
+    if not seconds > 0:  # 顺便挡住 NaN
+        raise ValueError(
+            bilingual(
+                f"每帧停留时间必须是正数（秒），收到 {value!r}。想停住动画请用 pause_anim()",
+                f"Frame time must be positive; got {value!r}. Use pause_anim() to freeze the animation",
+            )
+        )
+    return seconds
+
+
 def _load_image(source: Any) -> pygame.Surface:
     """路径 / Surface → Surface（路径不存在时给中英双语提示）。"""
     if isinstance(source, str):
@@ -315,8 +336,42 @@ class Sprite:
         return float(getattr(self.strategy, "dt", DEFAULT_FRAME_TIME))
 
     @dt.setter
-    def dt(self, value: float) -> None:
-        setattr(self.strategy, "dt", float(value))
+    def dt(self, value: Any) -> None:
+        setattr(self.strategy, "dt", _check_frame_time(value))
+
+    def set_dt(self, name: Any, dt: Any = None) -> None:
+        """设置每帧停留时间（秒）。
+
+        - 帧序列（`ListSpriteStrategy`）：`set_dt(0.1)`，不写名字；
+        - 状态机（`AnimatorStrategy`）：`set_dt("walk", 0.1)` 只改这个状态，
+          只写一个数值则改**所有**状态（等价于写 `dt`）。
+        """
+        states = getattr(self.strategy, "states", None)
+        if dt is None:
+            if states is not None and not isinstance(name, (int, float)):
+                raise TypeError(
+                    bilingual(
+                        f"状态机要写成 set_dt(状态名, 秒数)，收到 {name!r}；可用状态：{sorted(states)}",
+                        f"For a state machine use set_dt(state_name, seconds); got {name!r}",
+                    )
+                )
+            self.dt = name  # 帧序列 = 这条序列；状态机 = 所有状态
+            return
+        if states is None:
+            raise TypeError(
+                bilingual(
+                    f"这个贴图不是状态机（动画状态机才需要指定名字），帧序列请写 set_dt(秒数)：收到 {name!r}",
+                    "This sprite is not a state machine; use set_dt(seconds) for a frame list",
+                )
+            )
+        if name not in states:
+            raise ValueError(
+                bilingual(
+                    f"没有这个动画状态：{name!r}。可用状态：{sorted(states)}",
+                    f"Unknown animation state {name!r}; available: {sorted(states)}",
+                )
+            )
+        states[name].dt = _check_frame_time(dt)
 
     def set_next_state(self, name: str, condition: Any = None) -> None:
         setter = getattr(self.strategy, "set_next_state", None)

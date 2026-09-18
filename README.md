@@ -56,6 +56,7 @@ hero = pc.Character("hero.png", size=(32, 32))     # (宽, 高) → 矩形刚体
 hero.goto(100, 50)      # 放到坐标（清零速度）
 hero.forward(10)        # 沿朝向走 10 像素（不清速度）
 hero.slide_to((0, 0), 5)
+hero.set_dt(0.1)        # 每帧停留 0.1 秒（帧序列）；状态机写 hero.set_dt("walk", 0.1)
 hero.distance(enemy)    # 到另一个对象的距离；也可 hero.distance(100, 50) / hero.distance((100, 50))
 
 # 物理

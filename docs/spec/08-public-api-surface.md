@@ -24,7 +24,7 @@
 
 `Sprite` · `SpriteSheet` · `EasySpriteStrategy` · `ListSpriteStrategy` · `AnimatorStrategy` · `TiledMapStrategy`
 
-- 实体上的播放控制（spec 04 §2.4）：`play_anim` · `pause_anim` · `stop_anim` · `is_anim_playing`
+- 实体上的播放控制与帧速（spec 04 §2.1/§2.4）：`play_anim` · `pause_anim` · `stop_anim` · `is_anim_playing` · `set_dt`
 
 ### 2.4 物理与约束（spec 03）
 

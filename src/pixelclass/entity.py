@@ -513,6 +513,17 @@ class Entity:
         assert self.visual is not None
         self.visual.set_next_state(name, condition)
 
+    def set_dt(self, name: Any, dt: Any = None) -> None:
+        """设置动画每帧停留时间（秒）。
+
+        - 帧序列：`hero.set_dt(0.1)`（不写动画名字）；
+        - 状态机：`hero.set_dt("walk", 0.1)` 只改这个状态，`hero.set_dt(0.1)` 改所有状态。
+        """
+        if self._no_visual("set_dt"):
+            return
+        assert self.visual is not None
+        self.visual.set_dt(name, dt)
+
     def set_start_func(self, func: Any) -> None:
         if self._no_visual("set_start_func"):
             return

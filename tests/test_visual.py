@@ -208,6 +208,76 @@ def test_playback_controls_on_single_image_and_state_machine(_fresh_scene):
     assert machine.frame == 0 and machine.is_anim_playing() is False
 
 
+def test_set_dt_on_frame_list(_fresh_scene):
+    frames = [_surface((255, 0, 0)), _surface((0, 255, 0))]
+    hero = pc.Character(frames)
+    hero.goto(0, 0)
+    hero.set_dt(0.5)
+    assert hero.dt == pytest.approx(0.5)
+
+    for _ in range(20):  # 20 × 17ms ≈ 0.34s < 0.5s：还不到换帧
+        pc.update()
+    assert hero.frame == 0
+
+    hero.set_dt(0.01)
+    for _ in range(3):
+        pc.update()
+    assert hero.frame != 0, "改小 dt 后立刻生效"
+
+
+def test_set_dt_per_state_on_state_machine(_fresh_scene):
+    machine = pc.Character({"idle": [_surface(), _surface()], "walk": [_surface(), _surface()]})
+    machine.goto(0, 0)
+    default = machine.dt
+
+    machine.set_dt("walk", 0.5)
+    assert machine.dt == pytest.approx(default), "当前是 idle，不受影响"
+    assert machine.visual.strategy.states["walk"].dt == pytest.approx(0.5)
+
+    machine.state = "walk"
+    pc.update()  # 切换状态
+    assert machine.dt == pytest.approx(0.5)
+    for _ in range(10):
+        pc.update()
+    assert machine.frame == 0, "walk 变慢了，还没换帧"
+
+    machine.set_dt(0.02)  # 只给一个数值 = 所有状态
+    assert machine.visual.strategy.states["idle"].dt == pytest.approx(0.02)
+    assert machine.visual.strategy.states["walk"].dt == pytest.approx(0.02)
+
+    machine.stop_anim()  # 回到第 0 帧、清零帧计时，便于观察新 dt
+    machine.play_anim()
+    for _ in range(4):
+        pc.update()
+    assert machine.frame != 0, "改小 dt 后立刻变快"
+
+
+def test_set_dt_rejects_bad_state_and_bad_values(_fresh_scene):
+    machine = pc.Character({"idle": [_surface()], "walk": [_surface()]})
+    with pytest.raises(ValueError) as error:
+        machine.set_dt("run", 0.1)
+    assert "idle" in str(error.value), "错误里要列出可用状态"
+
+    frames = [_surface(), _surface()]
+    plain = pc.Character(frames)
+    with pytest.raises(TypeError):
+        plain.set_dt("walk", 0.1)  # 帧序列不需要动画名字
+
+    for bad in (0, -0.5, "快一点", None):
+        with pytest.raises((TypeError, ValueError)):
+            plain.set_dt(bad)
+    with pytest.raises((TypeError, ValueError)):
+        plain.dt = 0
+
+
+def test_missing_visual_set_dt_is_neutral():
+    hero = pc.Character(size=(16, 16))
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        hero.set_dt(0.1)
+    assert len(caught) == 1, "同一对象只提示一次"
+
+
 def test_missing_visual_playback_controls_are_neutral():
     hero = pc.Character(size=(16, 16))
     with warnings.catch_warnings(record=True) as caught:
