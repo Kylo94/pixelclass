@@ -578,6 +578,23 @@ class Entity:
         point = (float(x), float(y[0])) if y else (float(x[0]), float(x[1]))
         self.rigid.body.apply_impulse_at_local_point(point)
 
+    # ------------------------------------------------------------------ 鼠标交互
+    def get_mouse_upon(self) -> bool:
+        """鼠标是否悬停在这个对象上（要求对象可见；无贴图对象按刚体判定）。"""
+        from .input import get_mouse_pos
+
+        if self.visual is not None and not self.visual.visible:
+            return False
+        if not self.alive:
+            return False
+        return bool(self.collide(get_mouse_pos(self.world)))
+
+    def get_mouse_clicked(self) -> bool:
+        """鼠标是否**在这个对象上**按下（按住期间一直为真）。"""
+        from .input import get_mouse_clicked
+
+        return bool(get_mouse_clicked()) and self.get_mouse_upon()
+
     # ------------------------------------------------------------------ 音效
     def play_snd(self, path: Any, loop: bool = False) -> Any:
         """播放一个音效（无音频设备时安全无操作）。"""
@@ -618,7 +635,7 @@ class Entity:
     def _point_in_mask(self, point: Any) -> bool:
         if self.visual is None or not self.visual.visible:
             return False
-        rect = self.visual.rect
+        rect = self.visual.world_rect()
         local_x = int(round(float(point[0]) - rect.left))
         local_y = int(round(rect.bottom - float(point[1])))
         if not (0 <= local_x < rect.width and 0 <= local_y < rect.height):
@@ -643,10 +660,9 @@ class Entity:
             return False
         if not self.visual.visible or not other.visual.visible:
             return False
-        offset = (
-            other.visual.rect.left - self.visual.rect.left,
-            self.visual.rect.bottom - other.visual.rect.bottom,
-        )
+        mine = self.visual.world_rect()
+        theirs = other.visual.world_rect()
+        offset = (theirs.left - mine.left, mine.bottom - theirs.bottom)
         return self.visual.mask().overlap(other.visual.mask(), offset) is not None
 
     def separate(self, other: Any) -> None:

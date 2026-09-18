@@ -4,10 +4,13 @@
 """
 
 import os
+import random
+import warnings
 from typing import Any, Optional, Tuple
 
 import pygame
 
+from . import input as input_state
 from . import stepping
 from .clock import PHYSICS_DT
 from .context import resolve_world
@@ -18,6 +21,8 @@ from .vec import vec
 cwd = os.getcwd()  # 资源相对路径的基准（导入时确定；不随运行中 chdir 变化）
 
 _window: Optional[Window] = None
+_tracer_frames = 0
+_tracer_started: Optional[int] = None
 
 
 def init() -> None:
@@ -56,7 +61,7 @@ def setup(width: int, height: int, world: Any = None) -> Scene:
 def update(world: Any = None) -> None:
     """推进一帧（spec 01 §3.3）：事件 -> 物理（固定步 + 子步）-> 更新 -> 绘制。"""
     scene = resolve_world(world)
-    pygame.event.pump()
+    input_state.process_events(scene)  # 复位"刚发生"标记并消费事件队列
 
     # 帧序（spec 01 §3.3）：先把物理状态同步到显示层，再推进本帧的物理。
     # 因此**绘制的是上一帧物理的结果**——这样一次 update() 内不会出现"已经画过又被物理改写"
@@ -74,6 +79,17 @@ def update(world: Any = None) -> None:
     window = get_window()
     if window is not None:
         window.draw(scene)
+
+    if scene.tracer:
+        global _tracer_frames, _tracer_started
+        _tracer_frames += 1
+        now = pygame.time.get_ticks()
+        if _tracer_started is None:
+            _tracer_started = now
+        elif now - _tracer_started >= 1000:
+            print(f"[pixelclass] FPS ≈ {_tracer_frames * 1000 / (now - _tracer_started):.0f}")
+            _tracer_frames = 0
+            _tracer_started = now
     else:
         pygame.display.flip() if pygame.display.get_init() else None
     scene.is_updated = True
@@ -125,6 +141,46 @@ def speed(value: int, world: Any = None) -> int:
     scene = resolve_world(world)
     scene.speed_limit = max(1, int(value))
     return scene.speed_limit
+
+
+def debug(enabled: bool = True, world: Any = None) -> bool:
+    """调试绘制开关（刚体轮廓、相机中心），课堂演示"碰撞体到底在哪"很有用。"""
+    scene = resolve_world(world)
+    scene.debug = bool(enabled)
+    return scene.debug
+
+
+def tracer(enabled: bool = True, world: Any = None) -> bool:
+    """帧率跟踪开关：每隔约一秒打印一次 FPS。"""
+    scene = resolve_world(world)
+    scene.tracer = bool(enabled)
+    return scene.tracer
+
+
+def random_pos(margin: int = 0, world: Any = None) -> Any:
+    """在当前可视区域里随机取一个坐标（撒道具 / 出题用）。"""
+    scene = resolve_world(world)
+    width, height = scene.camera.size
+    half_w = max(1.0, width / 2 - margin)
+    half_h = max(1.0, height / 2 - margin)
+    return vec(
+        scene.camera.x + random.uniform(-half_w, half_w), scene.camera.y + random.uniform(-half_h, half_h)
+    )
+
+
+def set_depth(level: int = 1) -> str:
+    """返回"上 level 层目录"的路径。
+
+    历史行为会真的把进程工作目录切走（`os.chdir`），那会让之后所有相对路径都失效；
+    现在只返回路径并给出弃用提示，需要切换时请自己 `os.chdir(set_depth(1))`。
+    """
+    path = os.path.abspath(os.path.join(cwd, *([os.pardir] * max(0, int(level)))))
+    warnings.warn(
+        "set_depth() 不再改变进程工作目录，只返回路径；需要切换请显式调用 os.chdir(set_depth(1))",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return path
 
 
 def set_gravity(x: Any, *y: Any, world: Any = None) -> None:

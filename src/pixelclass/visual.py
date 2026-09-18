@@ -404,6 +404,13 @@ class Sprite:
         pos = self._parent_pos()
         self.rect.center = (int(pos[0]), int(pos[1]))
 
+    def set_base_image(self, image: pygame.Surface) -> None:
+        """替换基础图（单图策略），并让变换缓存失效。"""
+        self.strategy = EasySpriteStrategy(image)
+        self._display = None
+        self._mask = None
+        self.update()
+
     def display_image(self) -> pygame.Surface:
         """当前该画的图（含变换）。"""
         return self._transform()
@@ -426,6 +433,17 @@ class Sprite:
         center = camera.to_screen(self._parent_pos())
         rect.center = (int(center[0]), int(center[1]))
         surface.blit(image, rect)
+
+    def world_rect(self) -> pygame.Rect:
+        """按宿主**当前**位置算出的显示矩形。
+
+        与每帧缓存的 ``rect`` 的区别：移动对象之后立刻做点查询/碰撞也能拿到正确结果，
+        不必等下一帧（学生会这样写：goto 之后马上判断碰到了没）。
+        """
+        rect = self.display_image().get_rect()
+        pos = self._parent_pos()
+        rect.center = (int(pos[0]), int(pos[1]))
+        return rect
 
     def mask(self) -> Any:
         """像素掩码（碰撞判定用）：取自**当前显示图**，变换后自动失效重建。"""

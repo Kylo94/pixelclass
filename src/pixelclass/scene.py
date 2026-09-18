@@ -95,6 +95,8 @@ class Scene:
         self.is_updated = False  # 本帧是否已被推进过（教学/调试用）
         self.speed_limit = 1  # forward()/backward() 每次循环最多走多少像素（spec 07 §5 的 speed()）
         self.auto_update = False  # 教学演示：位移过程中自动推进画面（默认关闭，行为可复现）
+        self.tracer = False  # 帧率跟踪开关（spec 07 §5 的 tracer()）
+        self.resources: Any = None  # 资源缓存（首次 load_image() 时建立）
 
     # ------------------------------------------------------------ 物理
     def set_gravity(self, x: float, y: float) -> None:

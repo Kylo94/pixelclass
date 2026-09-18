@@ -42,7 +42,7 @@
 |---|---|
 | `key_pressed(键=None)` | 按住；不传键 = 任意键按住 |
 | `key_just_pressed(键)` / `key_just_released(键)` | 仅本帧为真 |
-| `key_input(提示文字="", 最大长度=…, world=None)` | 简易文本输入，返回当前输入内容（回车结束） |
+| `key_input(提示文字="", 最大长度=20, world=None)` | 简易文本输入：每帧返回当前已输入文字；回车后 `text_input_done()` 变真，取完结果用 `text_input_reset()` 清空 |
 
 - 键名使用 pygame 的键常量；`from … import *` 后可直接写 `K_SPACE`。
 
@@ -80,7 +80,7 @@ audio_available()                     # 是否有可用音频设备
 |---|---|
 | `load_image(路径, world=None)` | 载入图片（带缓存） |
 | `preload([路径…], world=None)` | 批量预载，返回数量或列表；缺文件要给出可读错误 |
-| `ResourceManager` | 场景级缓存：同一路径只解码一次；用弱引用避免长期占用 |
+| `ResourceManager` | 场景级缓存：同一路径只解码一次。用**普通字典 + 显式 `clear()`**：pygame 的 Surface 在不少平台不支持弱引用，与其"有时能回收"不如给确定的清理手段；`stats()` 可看命中次数 |
 
 - 图片与字体都缓存；同一路径第二次载入应当**命中缓存**（不重复解码）。
 - 载入失败 → 中英双语可读错误，指出路径与可能原因（拼错 / 不在工作目录 / 不是图片）。

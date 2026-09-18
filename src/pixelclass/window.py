@@ -4,8 +4,11 @@ M1 只负责：创建窗口、每帧清屏、画调试线段、翻页、保存�
 实体的绘制在视觉里程碑接入（spec 04）。
 """
 
+import math
 import os
-from typing import Any, Tuple
+from typing import Any, List, Tuple
+
+import pymunk
 
 import pygame
 
@@ -42,7 +45,44 @@ class Window:
             end = camera.to_screen(line[1])
             pygame.draw.line(self.surface, line[2], start, end, line[3])
         scene.lines.clear()
+        if getattr(scene, "debug", False):
+            self._draw_debug(scene)
         pygame.display.flip()
+
+    def _draw_debug(self, scene: Any) -> None:
+        """`debug(True)` 时把刚体轮廓画出来（课堂演示"碰撞体到底在哪"）。"""
+        bodies = list(scene.rigids)
+        for group in list(scene.tiles):
+            bodies.extend(list(group))
+        camera = scene.camera
+        for body in bodies:
+            shape = getattr(body, "shape", None)
+            if shape is None or shape.body is None:
+                continue
+            if isinstance(shape, pymunk.Circle):
+                center = camera.to_screen(shape.body.position)
+                pygame.draw.circle(
+                    self.surface,
+                    (0, 255, 0),
+                    (int(center[0]), int(center[1])),
+                    max(1, int(shape.radius * camera.zoom)),
+                    1,
+                )
+                continue
+            angle = shape.body.angle
+            cos_a, sin_a = math.cos(angle), math.sin(angle)
+            origin = shape.body.position
+            points: List[Tuple[float, float]] = [
+                camera.to_screen(
+                    (
+                        origin[0] + vertex[0] * cos_a - vertex[1] * sin_a,
+                        origin[1] + vertex[0] * sin_a + vertex[1] * cos_a,
+                    )
+                )
+                for vertex in shape.get_vertices()
+            ]
+            if len(points) >= 3:
+                pygame.draw.polygon(self.surface, (0, 255, 0), points, 1)
 
     def save(self, path: str) -> str:
         directory = os.path.dirname(os.path.abspath(path))
