@@ -27,6 +27,7 @@ def _fresh_scene():
     state["mouse_held"] = False
     state["mouse_just_pressed"] = False
     state["mouse_just_released"] = False
+    state["quit"] = False  # 关窗标记也要复位，否则会污染后面的测试
     pygame.event.clear()
     yield scene
 
@@ -98,6 +99,28 @@ def test_quit_flag():
     assert pc.should_quit() is True
     input_state.reset_quit()
     assert pc.should_quit() is False
+
+
+def test_window_close_ends_the_loop(_fresh_scene):
+    """点了窗口关闭按钮之后，`while True: update()` 必须能自己结束。"""
+    pygame.event.post(pygame.event.Event(pygame.QUIT))
+    pc.update()  # 这一帧照常走完（学生还能看到最后一帧）
+    assert pc.should_quit() is True
+
+    with pytest.raises(SystemExit):
+        pc.update()  # 下一次 update(): 收尾 + 结束
+    assert pygame.display.get_surface() is None, "退出时应当把窗口关掉"
+
+    pc.setup(320, 240)  # 给后面的测试一个干净窗口
+
+
+def test_window_close_can_be_intercepted(_fresh_scene):
+    pygame.event.post(pygame.event.Event(pygame.QUIT))
+    pc.update()
+    assert pc.should_quit() is True
+    input_state.reset_quit()  # 自己处理退出：拦下来
+    pc.update()
+    assert pc.should_quit() is False, "拦下之后程序继续跑"
 
 
 def test_entity_mouse_interaction(_fresh_scene):

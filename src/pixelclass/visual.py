@@ -7,7 +7,6 @@
 只有在对应标记为真时才重算，算完把标记复位——只改位置时绝不重算图像。
 """
 
-import os
 from typing import Any, Dict, List, Optional
 
 import pygame
@@ -38,17 +37,17 @@ def _check_frame_time(value: Any) -> float:
     return seconds
 
 
-def _load_image(source: Any) -> pygame.Surface:
-    """路径 / Surface → Surface（路径不存在时给中英双语提示）。"""
+def _load_image(source: Any, world: Any = None) -> pygame.Surface:
+    """路径 / Surface → Surface（路径走场景级缓存，缺文件时给中英双语提示）。
+
+    必须走缓存（spec 06 §4）：同一个路径只解码一次。以前这里直接
+    ``pygame.image.load``，于是每建一个实例就重新解码一遍——课堂项目里
+    "每帧都在造子弹/植物"的写法会把磁盘和解码全烧在这一处。
+    """
     if isinstance(source, str):
-        if not os.path.isfile(source):
-            raise FileNotFoundError(
-                bilingual(
-                    f"找不到图片文件：{os.path.abspath(source)}（检查路径与当前目录）",
-                    f"Image file not found: {os.path.abspath(source)}",
-                )
-            )
-        return pygame.image.load(source).convert_alpha()
+        from .resources import load_image  # 延迟导入，避免导入环
+
+        return load_image(source, world)
     if hasattr(source, "get_rect") and hasattr(source, "get_size"):
         return source
     raise TypeError(
@@ -63,8 +62,8 @@ def _load_image(source: Any) -> pygame.Surface:
 class EasySpriteStrategy:
     """单图：永远画同一张。"""
 
-    def __init__(self, image: Any, sheet: Any = None) -> None:
-        self.image = _load_image(image)
+    def __init__(self, image: Any, sheet: Any = None, world: Any = None) -> None:
+        self.image = _load_image(image, world)
         self.frame = 0
         self.frame_count = 1
 
@@ -78,10 +77,10 @@ class EasySpriteStrategy:
 class ListSpriteStrategy:
     """帧序列：按 ``frame`` 索引取图，``dt`` 控制每帧停留时间。"""
 
-    def __init__(self, images: Any, sheet: Any = None) -> None:
+    def __init__(self, images: Any, sheet: Any = None, world: Any = None) -> None:
         if isinstance(images, dict):  # 容错：误把状态字典交给帧序列
             images = next(iter(images.values()))
-        self.frames: List[pygame.Surface] = [_load_image(item) for item in images]
+        self.frames: List[pygame.Surface] = [_load_image(item, world) for item in images]
         if not self.frames:
             raise ValueError(bilingual("帧列表是空的", "The frame list is empty"))
         self.frame = 0
@@ -113,11 +112,11 @@ class ListSpriteStrategy:
 class AnimatorStrategy:
     """状态机：``{状态名: [帧…]}``，可设下一状态与首末回调。"""
 
-    def __init__(self, states: Dict[str, Any], sheet: Any = None) -> None:
+    def __init__(self, states: Dict[str, Any], sheet: Any = None, world: Any = None) -> None:
         if not states:
             raise ValueError(bilingual("状态字典是空的", "The state dictionary is empty"))
         self.states: Dict[str, ListSpriteStrategy] = {
-            name: ListSpriteStrategy(frames) for name, frames in states.items()
+            name: ListSpriteStrategy(frames, world=world) for name, frames in states.items()
         }
         self._state = next(iter(self.states))
         self._pending: Optional[str] = None
@@ -237,8 +236,8 @@ class TiledMapStrategy:
 class SpriteSheet:
     """图集：把一张大图按网格切成若干帧。"""
 
-    def __init__(self, image: Any, frame_width: int, frame_height: int) -> None:
-        self.surface = _load_image(image)
+    def __init__(self, image: Any, frame_width: int, frame_height: int, world: Any = None) -> None:
+        self.surface = _load_image(image, world)
         self.frame_width = int(frame_width)
         self.frame_height = int(frame_height)
 
@@ -292,19 +291,20 @@ class Sprite:
     def _make_strategy(self, source: Any) -> Any:
         if source is None:
             raise ValueError(bilingual("贴图来源不能为空", "The image source cannot be None"))
+        world = self.world
         if isinstance(source, SpriteSheet):
-            return ListSpriteStrategy(source.frames())
+            return ListSpriteStrategy(source.frames(), world=world)
         if isinstance(source, dict):
-            return AnimatorStrategy(source)
+            return AnimatorStrategy(source, world=world)
         if isinstance(source, (list, tuple)):
-            return ListSpriteStrategy(source)
+            return ListSpriteStrategy(source, world=world)
         if isinstance(source, str) and source.lower().endswith(".tmx"):
             from .worldmap import TiledMap  # 延迟导入，避免模块级成环
 
             return TiledMapStrategy(TiledMap(source))
         if hasattr(source, "render"):  # 瓦片地图对象（整图策略）
             return TiledMapStrategy(source)
-        return EasySpriteStrategy(source)
+        return EasySpriteStrategy(source, world=world)
 
     def _base_image(self) -> pygame.Surface:
         return self.strategy.image

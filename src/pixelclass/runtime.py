@@ -59,8 +59,17 @@ def setup(width: int, height: int, world: Any = None) -> Scene:
 
 
 def update(world: Any = None) -> None:
-    """推进一帧（spec 01 §3.3）：事件 -> 物理（固定步 + 子步）-> 更新 -> 绘制。"""
+    """推进一帧（spec 01 §3.3）：事件 -> 物理（固定步 + 子步）-> 更新 -> 绘制。
+
+    如果上一次 `update()` 收到了关窗请求（点了窗口的关闭按钮），这里先收尾再抛
+    `SystemExit`——`while True: update()` 于是会自然结束（spec 01 §2.1）。
+    想自己处理退出（比如弹"确认关闭"），在循环里看到 `should_quit()` 为真时
+    调用 `reset_quit()` 把它拦下来。
+    """
     scene = resolve_world(world)
+    if input_state.should_quit():
+        done()
+        raise SystemExit(0)
     input_state.process_events(scene)  # 复位"刚发生"标记并消费事件队列
 
     # 帧序（spec 01 §3.3）：先把物理状态同步到显示层，再推进本帧的物理。

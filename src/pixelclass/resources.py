@@ -4,12 +4,46 @@
 弱引用，与其"有时能回收、有时不能"，不如给出确定的 `clear()` 让老师自己控制。
 """
 
+import io
 import os
 from typing import Any, Dict, Iterable, List, Optional
 
 import pygame
 
 from .error_help import bilingual, not_initialised
+
+#: PNG 文件头（判断"要不要做块过滤"用）
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+
+
+def strip_iccp(data: bytes) -> Optional[bytes]:
+    """去掉 PNG 里的 ``iCCP`` 块；不是 PNG 或本来没有 iCCP 时返回 ``None``。
+
+    为什么要动文件内容：不少素材（含课堂用的这套）带的是"known incorrect sRGB profile"
+    这种有问题的 ICC 配置，libpng 每解码一次就往 stderr 打印一条
+    ``libpng warning: iCCP: known incorrect sRGB profile``——加载几十张图就刷屏，
+    把学生真正要看的信息冲掉。iCCP 只是颜色配置文件，去掉它不影响画面。
+    这里只在内存里过滤，**不改动磁盘上的原始素材**。
+    """
+    if not data.startswith(PNG_SIGNATURE):
+        return None
+    out = bytearray(PNG_SIGNATURE)
+    index = len(PNG_SIGNATURE)
+    removed = False
+    while index + 8 <= len(data):
+        length = int.from_bytes(data[index : index + 4], "big")
+        chunk_type = data[index + 4 : index + 8]
+        end = index + 12 + length
+        if end > len(data):  # 结构不对：原样交回给 pygame 报错
+            return None
+        if chunk_type == b"iCCP":
+            removed = True
+        else:
+            out += data[index:end]
+        index = end
+        if chunk_type == b"IEND":
+            break
+    return bytes(out) if removed else None
 
 
 class ResourceManager:
@@ -35,8 +69,17 @@ class ResourceManager:
             )
         if pygame.display.get_surface() is None:
             raise not_initialised("载入图片")
+        source: Any = key
         try:
-            image = pygame.image.load(key).convert_alpha()
+            with open(key, "rb") as handle:
+                raw = handle.read()
+        except OSError:
+            raw = b""
+        clean = strip_iccp(raw) if raw else None
+        if clean is not None:
+            source = io.BytesIO(clean)
+        try:
+            image = pygame.image.load(source).convert_alpha()
         except pygame.error as error:
             message = str(error)
             if "display" in message or "video" in message:
