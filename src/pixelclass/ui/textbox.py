@@ -18,7 +18,7 @@ MARGIN = 8
 
 
 class TextBox(Entity):
-    """屏幕文字：`write(文字)` 更新内容。"""
+    """屏幕文字：`print(文字)` 更新内容。"""
 
     def __init__(
         self,
@@ -36,7 +36,7 @@ class TextBox(Entity):
         self.background = background
         self.text = ""
         self._font: Any = None
-        self.write(text)
+        self.print(text)
 
     # ------------------------------------------------------------------ 内容
     def _get_font(self) -> Any:
@@ -50,14 +50,18 @@ class TextBox(Entity):
         if size is not None:
             self.font_size = int(size)
         self._font = None
-        self.write(self.text)
+        self.print(self.text)
 
-    def write(self, text: Any) -> None:
+    def print(self, text: Any) -> None:
         """更新显示的文字（立即重画，下一帧就是新内容）。"""
         self.text = "" if text is None else str(text)
         self._rebuild()
 
-    #: 兼容名（旧讲义里用 `textbox.write()`；这里也允许 `textbox.text = ...` 后手动刷新）
+    def write(self, text: Any) -> None:
+        """兼容名，等价于 `print()`（0.1.1 及更早的写法）。"""
+        self.print(text)
+
+    #: 直接改 `text` 属性后调用它，可在下一帧重画
     def refresh(self) -> None:
         self._rebuild()
 
@@ -113,7 +117,7 @@ class DialogBox(TextBox):
     # ------------------------------------------------------------------ 显示
     def say(self, text: Any, duration: Optional[float] = None) -> None:
         """显示一句话；`duration` 秒后自动隐藏。"""
-        self.write(text)
+        self.print(text)
         if duration is not None:
             self.duration = float(duration)
         self._left = self.duration

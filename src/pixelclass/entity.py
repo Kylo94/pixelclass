@@ -595,6 +595,18 @@ class Entity:
 
         return bool(get_mouse_clicked()) and self.get_mouse_upon()
 
+    def get_mouse_just_clicked(self) -> bool:
+        """鼠标是否**刚好在这个对象上按下**（只在按下的那一帧为真）。"""
+        from .input import get_mouse_just_clicked
+
+        return bool(get_mouse_just_clicked()) and self.get_mouse_upon()
+
+    def get_mouse_just_released(self) -> bool:
+        """鼠标是否**刚好在这个对象上松开**（只在松开的那一帧为真）。"""
+        from .input import get_mouse_just_released
+
+        return bool(get_mouse_just_released()) and self.get_mouse_upon()
+
     # ------------------------------------------------------------------ 音效
     def play_snd(self, path: Any, loop: bool = False) -> Any:
         """播放一个音效（无音频设备时安全无操作）。"""

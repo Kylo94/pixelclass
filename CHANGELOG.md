@@ -2,6 +2,19 @@
 
 本项目遵循[语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [未发布]
+
+### 新增
+
+- `Entity.get_mouse_just_clicked()` / `Entity.get_mouse_just_released()`：
+  鼠标**刚在对象上按下 / 松开**的那一帧为真（`get_mouse_clicked()` 是"按住期间一直为真"），
+  适合"点一下按钮"这类交互。
+
+### 变更
+
+- `TextBox.write(文字)` 更名为 `TextBox.print(文字)`；`write()` 保留为等价兼容名。
+  这是**破坏性更名**（0.1.1 及更早的代码仍可运行，但新代码请用 `print()`），下一版将按 0.2.0 发布。
+
 ## [0.1.1] - 2026-09-18
 
 ### 修复

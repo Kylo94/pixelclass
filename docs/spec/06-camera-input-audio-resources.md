@@ -48,8 +48,10 @@
 
 ### 2.3 实体级交互
 
-- `obj.get_mouse_clicked()`：鼠标**在对象上**按下时为真；
 - `obj.get_mouse_upon()`：鼠标**悬停在对象上**时为真；
+- `obj.get_mouse_clicked()`：鼠标**在对象上**按下（按住期间持续为真）；
+- `obj.get_mouse_just_clicked()`：鼠标**刚在对象上按下**（仅该帧为真，适合"点一下"）；
+- `obj.get_mouse_just_released()`：鼠标**刚在对象上松开**（仅该帧为真）；
 - 判定要求对象 `visible`；命中判定走碰撞/贴图 mask（见 `03` §5）。
 
 ## 3. 音频

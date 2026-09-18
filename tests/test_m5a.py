@@ -25,6 +25,8 @@ def _fresh_scene():
     state["text_buffer"] = ""
     state["text_done"] = False
     state["mouse_held"] = False
+    state["mouse_just_pressed"] = False
+    state["mouse_just_released"] = False
     pygame.event.clear()
     yield scene
 
@@ -113,15 +115,51 @@ def test_entity_mouse_interaction(_fresh_scene):
     assert hero.get_mouse_upon() is False, "隐藏后不参与命中判定"
 
 
+def test_entity_mouse_just_clicked_and_released(_fresh_scene):
+    hero = pc.Character(TILES)
+    elsewhere = pc.Character(TILES)
+    mouse_pos = pc.get_mouse_pos()
+    hero.goto(mouse_pos[0], mouse_pos[1])
+    elsewhere.goto(mouse_pos[0] + 500, mouse_pos[1] + 500)
+
+    assert hero.get_mouse_just_clicked() is False, "没按下时为假"
+
+    pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=(0, 0)))
+    input_state.process_events()
+    assert hero.get_mouse_just_clicked() is True, "对象上按下的那一帧为真"
+    assert elsewhere.get_mouse_just_clicked() is False, "只对鼠标下的对象为真"
+
+    input_state.process_events()  # 只是按住，不再算"刚按下"
+    assert hero.get_mouse_clicked() is True
+    assert hero.get_mouse_just_clicked() is False, "刚按下只应在一帧内为真"
+    assert hero.get_mouse_just_released() is False
+
+    pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONUP, button=1, pos=(0, 0)))
+    input_state.process_events()
+    assert hero.get_mouse_just_released() is True, "对象上松开的那一帧为真"
+    assert elsewhere.get_mouse_just_released() is False
+
+    input_state.process_events()
+    assert hero.get_mouse_just_released() is False, "刚松开只应在一帧内为真"
+
+
 # ------------------------------------------------------------------ 文本与对话框
-def test_textbox_write_resizes_and_is_killable(_fresh_scene):
+def test_textbox_print_resizes_and_is_killable(_fresh_scene):
     box = pc.TextBox(16, "hi")
     narrow = box.width
-    box.write("hi there, this is longer")
+    box.print("hi there, this is longer")
     assert box.width > narrow
     assert box.visual is not None
     box.kill()
     assert box.alive is False
+
+
+def test_textbox_write_is_still_an_alias(_fresh_scene):
+    box = pc.TextBox(16, "hi")
+    box.write("换了内容")
+    assert box.text == "换了内容"
+    assert box.print("再换一次") is None
+    assert box.text == "再换一次"
 
 
 def test_textbox_multiline(_fresh_scene):

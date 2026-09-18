@@ -82,6 +82,7 @@ pc.TextBox(20, "得分：0").goto(-280, 200);  pc.DialogBox(hero).say("你好！
 # 输入
 pc.key_pressed(pc.K_SPACE)     pc.key_just_pressed(pc.K_LEFT)     pc.key_pressed()  # 任意键
 pc.get_mouse_pos()             pc.get_mouse_clicked()              hero.get_mouse_upon()
+hero.get_mouse_just_clicked()  hero.get_mouse_just_released()      # 只在该帧为真：点一下/松开
 
 # 教学辅助
 pc.debug(True)      # 画出刚体轮廓：碰撞体到底在哪一目了然
