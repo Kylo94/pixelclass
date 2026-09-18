@@ -105,6 +105,20 @@ def draw_line(p1: Any, p2: Any, color: Any = (255, 255, 255), width: int = 1, wo
     scene.lines.append((vec(p1), vec(p2), tuple(color), int(width)))
 
 
+def bgpic(img: Any, world: Any = None) -> Any:
+    """把一张图 / Surface / 瓦片地图作为背景铺开，并把相机尺寸设成它的大小。
+
+    返回背景对象，便于后续移动或销毁（``bgpic("bg.png").kill()``）。
+    """
+    from .entity import Character  # 延迟导入：entity 依赖 runtime
+
+    scene = resolve_world(world)
+    background = Character(img, world=scene)
+    if background.visual is not None:
+        scene.camera.size = (background.width, background.height)
+    return background
+
+
 def speed(value: int, world: Any = None) -> int:
     """限制每帧位移的步长（"慢动作"，方便课堂观察移动过程）。"""
     scene = resolve_world(world)

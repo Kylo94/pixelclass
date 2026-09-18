@@ -232,7 +232,10 @@ class Entity:
             self.tiles.set_rot(value)
 
     def _write_rot(self, value: float) -> None:
-        self._rot = float(value)
+        value = float(value)
+        if value == self._rot:
+            return  # 角度没变：不标记重绘（物理每帧回写时尤其重要，见 spec 04 §1.3）
+        self._rot = value
         if self.visual is not None:
             self.visual.rotated = True
 
@@ -425,6 +428,66 @@ class Entity:
         assert self.visual is not None
         return int(self.visual.height)
 
+    @property
+    def frame(self) -> int:
+        if self._no_visual("frame"):
+            return 0
+        assert self.visual is not None
+        return int(self.visual.frame)
+
+    @frame.setter
+    def frame(self, index: int) -> None:
+        if self._no_visual("frame"):
+            return
+        assert self.visual is not None
+        self.visual.frame = index
+
+    @property
+    def state(self) -> str:
+        if self._no_visual("state"):
+            return ""
+        assert self.visual is not None
+        return str(self.visual.state)
+
+    @state.setter
+    def state(self, name: str) -> None:
+        if self._no_visual("state"):
+            return
+        assert self.visual is not None
+        self.visual.state = name  # 写状态下一帧生效（spec 04 §2.2）
+
+    @property
+    def dt(self) -> float:
+        if self._no_visual("dt"):
+            return 0.0
+        assert self.visual is not None
+        return float(self.visual.dt)
+
+    @dt.setter
+    def dt(self, value: float) -> None:
+        if self._no_visual("dt"):
+            return
+        assert self.visual is not None
+        self.visual.dt = value
+
+    def set_next_state(self, name: str, condition: Any = None) -> None:
+        if self._no_visual("set_next_state"):
+            return
+        assert self.visual is not None
+        self.visual.set_next_state(name, condition)
+
+    def set_start_func(self, func: Any) -> None:
+        if self._no_visual("set_start_func"):
+            return
+        assert self.visual is not None
+        self.visual.set_start_func(func)
+
+    def set_end_func(self, func: Any) -> None:
+        if self._no_visual("set_end_func"):
+            return
+        assert self.visual is not None
+        self.visual.set_end_func(func)
+
     def flipx(self, value: bool = True) -> None:
         if self._no_visual("flipx"):
             return
@@ -602,10 +665,12 @@ class Entity:
 
     # ------------------------------------------------------------------ 生命周期
     def _update(self) -> None:
-        """内部每帧调用（**不要覆盖**）：只做框架自己的状态维护。"""
+        """内部每帧调用（**不要覆盖**）：只做框架自己的状态维护。
+
+        贴图的每帧推进由场景的绘制集合统一负责（``scene.visuals``），
+        实体这里**不再**重复调用，否则动画会按两倍速度播放。
+        """
         self._just_released = False
-        if self.visual is not None:
-            self.visual.update()
 
     def update(self) -> None:
         """留给使用者覆盖的每帧钩子（默认什么都不做）。"""

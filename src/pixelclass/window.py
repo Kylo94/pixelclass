@@ -30,9 +30,13 @@ class Window:
         pygame.display.set_caption(str(text))
 
     def draw(self, scene: Any) -> None:
-        """清屏 -> 画线段 -> （视觉里程碑接入实体绘制）-> 翻页。"""
+        """清屏 -> 按图层画所有可见贴图 -> 画线段 -> 翻页（spec 04 §3）。"""
         self.surface.fill(BACKGROUND)
         camera = scene.camera
+        for visual in sorted(list(scene.visuals), key=lambda item: getattr(item, "layer", 0)):
+            if not getattr(visual, "visible", True):
+                continue
+            visual.draw(self.surface, camera)
         for line in list(scene.lines):
             start = camera.to_screen(line[0])
             end = camera.to_screen(line[1])

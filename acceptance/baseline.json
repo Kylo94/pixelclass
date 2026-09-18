@@ -1,5 +1,4 @@
 {
-  "_note": "行为基线：数值来自旧引擎的实测（observations.md §2 A 组）。新实现必须逐项对上；B 组的像素相关观测在本引擎自己的夹具上冻结（M4 时补入）。",
   "after_kill": [
     false,
     true,
@@ -39,6 +38,7 @@
     7.0,
     3.0
   ],
+  "frame_hash": "0b150fd32588b1da",
   "goto_pos": [
     100.0,
     50.0
@@ -65,6 +65,7 @@
     5.0,
     5.0
   ],
+  "sprite_only_collide_self": false,
   "sprite_only_has_body": false,
   "substep_no_tunnel": true,
   "tiled_objects": [

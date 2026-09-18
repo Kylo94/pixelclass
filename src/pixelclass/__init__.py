@@ -17,6 +17,7 @@ from .entity import Character, Entity, Mouse, Sensor, Wall
 from .physics import Body, BodiesGroup, TiledMapBodies, TiledMapBodiesGroup
 from .physics.joints import Connect, Spring, connect
 from .runtime import (
+    bgpic,
     cwd,
     done,
     draw_line,
@@ -31,7 +32,14 @@ from .runtime import (
 from .input import get_mouse_pos, get_mouse_rel, set_mouse_visible
 from .scene import Group, Scene
 from .vec import Cartesian2pygame, pygame2Cartesian, sign, to_cp, vec
-from .visual import Sprite
+from .visual import (
+    AnimatorStrategy,
+    EasySpriteStrategy,
+    ListSpriteStrategy,
+    Sprite,
+    SpriteSheet,
+    TiledMapStrategy,
+)
 from .worldmap import TiledMap
 from .window import Window
 
@@ -62,8 +70,14 @@ _FRAMEWORK_NAMES = [
     "Wall",
     "Sensor",
     "Mouse",
-    # 视觉与输入
+    # 视觉与输入（spec 04）
     "Sprite",
+    "SpriteSheet",
+    "EasySpriteStrategy",
+    "ListSpriteStrategy",
+    "AnimatorStrategy",
+    "TiledMapStrategy",
+    "bgpic",
     # 地图（spec 05）
     "TiledMap",
     "get_mouse_pos",

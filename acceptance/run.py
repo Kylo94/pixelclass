@@ -23,6 +23,8 @@ os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "src"))
 
+import pygame  # noqa: E402
+
 import pixelclass as pc  # noqa: E402
 from pixelclass.clock import PHYSICS_DT, Clock  # noqa: E402
 from pixelclass.stepping import fastest_speed, substeps_for  # noqa: E402
@@ -267,7 +269,17 @@ def obs_after_kill():
 
 
 def obs_frame_hash():
-    raise Skip("绘制管线尚未实现（视觉里程碑）")
+    """固定场景渲染一帧后的像素哈希（B 组：在本引擎自己的夹具上冻结）。"""
+    import hashlib
+
+    _scene()
+    pc.bgpic(TILES)
+    marker = pc.Character(TILES, size=(32, 32))
+    marker.goto(30, 20)
+    marker.rot = 15
+    pc.update()
+    surface = pygame.display.get_surface()
+    return hashlib.sha256(pygame.image.tostring(surface, "RGB")).hexdigest()[:16]
 
 
 def obs_sprite_only_collide_self():
@@ -339,18 +351,40 @@ def _same(want, got):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="pixelclass 行为验收")
-    parser.add_argument("--freeze", action="store_true", help="重新冻结基线")
+    parser.add_argument("--freeze", action="store_true", help="把新观测合并进基线")
+    parser.add_argument("--force", action="store_true", help="配合 --freeze：允许覆盖既有期望值")
     parser.add_argument("--strict", action="store_true", help="把暂缺的观测也算失败")
     args = parser.parse_args(argv)
 
     actual = observe()
 
     if args.freeze:
-        frozen = {key: value for key, value in actual.items() if not _is_missing(value)}
+        existing = {}
+        if os.path.isfile(BASELINE):
+            with open(BASELINE, encoding="utf-8") as handle:
+                existing = {k: v for k, v in json.load(handle).items() if not k.startswith("_")}
+        fresh = {key: value for key, value in actual.items() if not _is_missing(value)}
+
+        # 既有期望值（A 组，来自旧引擎实测）不允许被悄悄覆盖：那是等价性承诺
+        changed = [
+            (name, existing[name], fresh[name])
+            for name in sorted(set(existing) & set(fresh))
+            if not _same(existing[name], fresh[name])
+        ]
+        if changed and not args.force:
+            print("拒绝冻结：以下既有期望值发生了变化（这属于行为回归，不是新观测）：")
+            for name, want, got in changed:
+                print(f"  ✗ {name:22s} 期望 {want}  实际 {got}")
+            print("\n确认是有意改动时用 --freeze --force。")
+            return 1
+
+        merged = dict(existing)
+        merged.update(fresh)
         with open(BASELINE, "w", encoding="utf-8") as handle:
-            json.dump(frozen, handle, ensure_ascii=False, indent=2, sort_keys=True)
+            json.dump(merged, handle, ensure_ascii=False, indent=2, sort_keys=True)
             handle.write("\n")
-        print(f"已重新冻结基线：{os.path.relpath(BASELINE, ROOT)}（{len(frozen)} 项）")
+        added = sorted(set(fresh) - set(existing))
+        print(f"基线已更新：{os.path.relpath(BASELINE, ROOT)}（共 {len(merged)} 项，新增 {added or '无'}）")
         return 0
 
     if not os.path.isfile(BASELINE):
