@@ -34,7 +34,9 @@ def get_window() -> Optional[Window]:
 
 def _ensure_window(size: Tuple[int, int], caption: str = "pixelclass") -> Window:
     global _window
-    if _window is None:
+    if _window is None or pygame.display.get_surface() is None:
+        # 显示被 done()/display.quit() 关掉之后要能重新建立窗口，
+        # 否则窗口对象还在、表面却已失效（再次 setup() 会拿到坏表面）
         _window = Window(size, caption)
     else:
         _window.set_size(size)

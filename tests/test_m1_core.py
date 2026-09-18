@@ -203,3 +203,12 @@ def test_public_subset_from_spec_08():
 
 def test_pygame_initialised_headless():
     assert pygame.get_init()
+
+
+def test_setup_after_done_recreates_the_window():
+    pc.setup(320, 240)
+    pc.done()
+    scene = pc.setup(320, 240)  # 关掉之后再开：不应拿到失效的表面
+    assert pygame.display.get_surface() is not None, "窗口应当被重新建立"
+    pc.update(scene)
+    assert scene.clock is not None

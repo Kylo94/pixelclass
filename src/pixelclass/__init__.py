@@ -32,6 +32,7 @@ from .input import get_mouse_pos, get_mouse_rel, set_mouse_visible
 from .scene import Group, Scene
 from .vec import Cartesian2pygame, pygame2Cartesian, sign, to_cp, vec
 from .visual import Sprite
+from .worldmap import TiledMap
 from .window import Window
 
 # 讲义兼容别名（spec 08 §2.1）
@@ -63,6 +64,8 @@ _FRAMEWORK_NAMES = [
     "Mouse",
     # 视觉与输入
     "Sprite",
+    # 地图（spec 05）
+    "TiledMap",
     "get_mouse_pos",
     "get_mouse_rel",
     "set_mouse_visible",
