@@ -7,4 +7,4 @@
 
 | 日期 | 规格小节 | 问题 | 结论（行为） |
 |---|---|---|---|
-| — | — | （尚无查证记录；规格先行阶段） | — |
+| 2026-09-18 | 03 §2 | 动态刚体的质量与转动惯量用什么约定？（验收项 `tunnel_bullet_x = -22.88`、`constraint_distance = 50.34` 对质量敏感） | 动态刚体 **mass = 1、moment = 1**；**圆形**的 moment 用 `moment_for_circle(1, 0, 半径)`；形状的 friction / elasticity 保持 pymunk 默认（不额外设置） |

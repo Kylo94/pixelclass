@@ -15,6 +15,7 @@ from .camera import Camera
 from .context import global_var
 from .entity import Character, Entity, Mouse, Sensor, Wall
 from .physics import Body, BodiesGroup, TiledMapBodies, TiledMapBodiesGroup
+from .physics.joints import Connect, Spring, connect
 from .runtime import (
     cwd,
     done,
@@ -74,6 +75,10 @@ _FRAMEWORK_NAMES = [
     "BodiesGroup",
     "TiledMapBodies",
     "TiledMapBodiesGroup",
+    # 约束（spec 03 §6）
+    "connect",
+    "Connect",
+    "Spring",
     # 工具（spec 01 / 07）
     "draw_line",
     "set_gravity",

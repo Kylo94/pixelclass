@@ -27,7 +27,8 @@ BODY_TYPES: Dict[str, int] = {
 
 SHAPE_KINDS = ("CIRCLE", "BOX", "POLY")
 
-DEFAULT_DENSITY = 1.0  # 动态刚体的默认密度（质量与转动惯量由几何算出）
+DEFAULT_MASS = 1.0  # 动态刚体默认质量（spec 03 §2 固定约定）
+DEFAULT_MOMENT = 1.0  # 非圆形的默认转动惯量
 
 
 def resolve_body_type(body_type: Any) -> int:
@@ -67,14 +68,14 @@ class Body:
         self.offset = vec(0, 0)  # 瓦片组里的相对偏移；单体刚体恒为 0
 
         if self._type == pymunk.Body.DYNAMIC:
-            # 动态刚体必须有质量与转动惯量（pymunk 会校验），因此不传 body_type 而先建默认动态体
-            self.body = pymunk.Body(DEFAULT_DENSITY, 1.0)
+            # 动态刚体的质量与转动惯量按规格固定（spec 03 §2）：mass = 1；
+            # 圆形用 moment_for_circle（保证转动惯量与其几何相称），其余形状 moment = 1。
+            self.body = pymunk.Body(DEFAULT_MASS, DEFAULT_MOMENT)
         else:
             self.body = pymunk.Body(body_type=self._type)
         self.shape = self._make_shape(self.kind, size, self._sensor)
-        if self._type == pymunk.Body.DYNAMIC:
-            self.body.mass = DEFAULT_DENSITY * self.shape.area
-            self.body.moment = DEFAULT_DENSITY * max(float(getattr(self.shape, "moment", 1.0)), 1e-6)
+        if self._type == pymunk.Body.DYNAMIC and self.kind == "CIRCLE":
+            self.body.moment = pymunk.moment_for_circle(DEFAULT_MASS, 0, self.shape.radius, (0, 0))
 
         self.world.space.add(self.body, self.shape)
         if _register:

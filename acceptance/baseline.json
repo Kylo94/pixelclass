@@ -1,0 +1,129 @@
+{
+  "_note": "行为基线：数值来自旧引擎的实测（observations.md §2 A 组）。新实现必须逐项对上；B 组的像素相关观测在本引擎自己的夹具上冻结（M4 时补入）。",
+  "after_kill": [
+    false,
+    true,
+    true,
+    true
+  ],
+  "backward": [
+    0.0,
+    0.0
+  ],
+  "body_angle_deg": 30.0,
+  "camera_pos": [
+    123.0,
+    45.0
+  ],
+  "collide_object": true,
+  "collide_point_hit": true,
+  "collide_point_miss": false,
+  "color": [
+    10,
+    20,
+    30,
+    200
+  ],
+  "constraint_distance": 50.34,
+  "fall_after_30": [
+    114.5,
+    -85.75
+  ],
+  "fall_velocity": [
+    30.0,
+    -600.0
+  ],
+  "forward": [
+    5.0,
+    0.0,
+    7.0,
+    3.0
+  ],
+  "goto_pos": [
+    100.0,
+    50.0
+  ],
+  "max_substeps": 6,
+  "pos_setter": [
+    -10.0,
+    -20.0,
+    0.0,
+    0.0
+  ],
+  "rot": 30.0,
+  "scale": [
+    64.0,
+    64.0
+  ],
+  "separate_moved": [
+    0.0,
+    0.0
+  ],
+  "slide_to": [
+    2.0,
+    0.0,
+    5.0,
+    5.0
+  ],
+  "sprite_only_has_body": false,
+  "substep_no_tunnel": true,
+  "tiled_objects": [
+    [
+      "spawn",
+      -120.0,
+      -56.0,
+      true,
+      true,
+      false
+    ],
+    [
+      "ground_body",
+      0.0,
+      -104.0,
+      true,
+      true,
+      false
+    ],
+    [
+      "platform_a",
+      -64.0,
+      -8.0,
+      true,
+      true,
+      false
+    ],
+    [
+      "platform_b",
+      64.0,
+      8.0,
+      true,
+      true,
+      false
+    ],
+    [
+      "coin_a",
+      -72.0,
+      24.0,
+      true,
+      true,
+      true
+    ],
+    [
+      "coin_b",
+      56.0,
+      40.0,
+      true,
+      true,
+      true
+    ]
+  ],
+  "tunnel_bullet_x": -22.88,
+  "x_setter": [
+    200.0,
+    0.0
+  ],
+  "y_setter": [
+    -75.0,
+    0.0
+  ]
+}

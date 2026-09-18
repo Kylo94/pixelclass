@@ -56,13 +56,17 @@ def update(world: Any = None) -> None:
     scene = resolve_world(world)
     pygame.event.pump()
 
-    for _ in range(scene.clock.tick()):
-        stepping.step_space(scene.space, PHYSICS_DT, scene.max_step_distance, scene.max_substeps)
-
+    # 帧序（spec 01 §3.3）：先把物理状态同步到显示层，再推进本帧的物理。
+    # 因此**绘制的是上一帧物理的结果**——这样一次 update() 内不会出现"已经画过又被物理改写"
+    # 的中间态，同时让显示状态与验收基线的时序一致。
+    steps = scene.clock.tick()
     scene.sync_display()
     scene.entities.update()
     scene.visuals.update()
     scene.camera._sync_to_subject()
+
+    for _ in range(steps):
+        stepping.step_space(scene.space, PHYSICS_DT, scene.max_step_distance, scene.max_substeps)
 
     window = get_window()
     if window is not None:

@@ -25,7 +25,9 @@ Rigid(body_type, shape="CIRCLE"|"BOX"|"POLY", size=..., sensor=False, world=None
 | `BOX` | `(w, h)` | 矩形 |
 | `POLY` | `[[x, y], …]` | 多边形（顶点） |
 
-- 面积/质量：默认按几何自动计算；`mass` 可读写覆盖。
+- **质量约定（固定，用于行为等价）**：动态刚体 `mass = 1`、`moment = 1`；
+  **圆形**的转动惯量用 `moment_for_circle(1, 0, 半径)`（与其几何相称），其余形状 `moment = 1`。
+  `mass` 可读写覆盖。
 - 常见属性：`velocity`、`angular_velocity`、`mass`、`elasticity`（0~1）、`friction`（0~1）、
   `sensor`、`shape`（底层形状，供进阶用法）。
 
