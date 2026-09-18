@@ -16,7 +16,6 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Education",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Topic :: Education",
     "Topic :: Games/Entertainment",
@@ -27,7 +26,11 @@ dependencies = [
     "pytmx>=3.32",
 ]
 
+# 两处都写：uv 用 [dependency-groups]（uv run 默认就装），pip 用户用 extras
 [project.optional-dependencies]
+dev = ["black", "flake8", "mypy", "pytest", "build", "twine"]
+
+[dependency-groups]
 dev = ["black", "flake8", "mypy", "pytest", "build", "twine"]
 
 [project.urls]
@@ -35,6 +38,10 @@ Repository = "https://github.com/Kylo94/pixelclass"
 
 [tool.setuptools]
 packages = ["pixelclass"]
+include-package-data = true
+
+[tool.setuptools.package-dir]
+"" = "src"
 
 [tool.setuptools.dynamic]
 version = { attr = "pixelclass._version.__version__" }
