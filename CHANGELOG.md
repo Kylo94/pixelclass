@@ -9,6 +9,9 @@
 - `Entity.get_mouse_just_clicked()` / `Entity.get_mouse_just_released()`：
   鼠标**刚在对象上按下 / 松开**的那一帧为真（`get_mouse_clicked()` 是"按住期间一直为真"），
   适合"点一下按钮"这类交互。
+- 动画播放控制：`play_anim()` / `pause_anim()` / `stop_anim()` / `is_anim_playing()`。
+  新对象默认就在播放；`play_anim()` 从当前帧继续，`stop_anim()` 回到第 0 帧并暂停。
+  暂停只冻结帧推进（状态机切换也一并冻结），不影响物理、位置或绘制。
 
 ### 变更
 

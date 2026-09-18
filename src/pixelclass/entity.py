@@ -488,6 +488,35 @@ class Entity:
         assert self.visual is not None
         self.visual.set_end_func(func)
 
+    # ------------------------------------------------------------------ 动画播放
+    def play_anim(self) -> None:
+        """开始 / 继续播放动画（从当前帧继续，不回到第 0 帧）。"""
+        if self._no_visual("play_anim"):
+            return
+        assert self.visual is not None
+        self.visual.play_anim()
+
+    def pause_anim(self) -> None:
+        """暂停动画：画面停在当前帧。"""
+        if self._no_visual("pause_anim"):
+            return
+        assert self.visual is not None
+        self.visual.pause_anim()
+
+    def stop_anim(self) -> None:
+        """停止动画并回到第 0 帧（想从头重播：`stop_anim()` 再 `play_anim()`）。"""
+        if self._no_visual("stop_anim"):
+            return
+        assert self.visual is not None
+        self.visual.stop_anim()
+
+    def is_anim_playing(self) -> bool:
+        """动画是否在播放（新对象默认在播放）。"""
+        if self._no_visual("is_anim_playing"):
+            return False
+        assert self.visual is not None
+        return bool(self.visual.is_anim_playing())
+
     def flipx(self, value: bool = True) -> None:
         if self._no_visual("flipx"):
             return

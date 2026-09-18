@@ -134,6 +134,91 @@ def test_single_image_never_advances(_fresh_scene):
     assert hero.visual.strategy.frame_count == 1
 
 
+# ------------------------------------------------------------------ 播放控制
+def test_pause_play_and_stop(_fresh_scene):
+    frames = [_surface((255, 0, 0)), _surface((0, 255, 0))]
+    hero = pc.Character(frames)
+    hero.dt = 0.05
+    hero.goto(0, 0)
+    assert hero.is_anim_playing() is True, "新对象默认就在播放"
+
+    for _ in range(4):  # 4 × 17ms ≈ 0.068s > 0.05s：推进一帧
+        pc.update()
+    assert hero.frame == 1
+
+    hero.pause_anim()
+    assert hero.is_anim_playing() is False
+    for _ in range(10):
+        pc.update()
+    assert hero.frame == 1, "暂停后帧不再推进"
+
+    hero.play_anim()
+    assert hero.is_anim_playing() is True
+    for _ in range(4):
+        pc.update()
+    assert hero.frame == 0, "play 应当从当前帧继续（上一帧是 1），而不是跳帧"
+
+
+def test_stop_anim_rewinds_to_first_frame(_fresh_scene):
+    frames = [_surface((255, 0, 0)), _surface((0, 255, 0)), _surface((0, 0, 255))]
+    hero = pc.Character(frames)
+    hero.dt = 0.01
+    hero.goto(0, 0)
+    for _ in range(5):
+        pc.update()
+    assert hero.frame != 0
+
+    hero.stop_anim()
+    assert hero.frame == 0
+    assert hero.is_anim_playing() is False
+    for _ in range(5):
+        pc.update()
+    assert hero.frame == 0, "stop 之后应当保持暂停"
+
+
+def test_playback_controls_do_not_touch_position_or_drawing(_fresh_scene):
+    hero = pc.Character(_surface())
+    hero.goto(10, 20)
+    hero.pause_anim()
+    hero.goto(30, 40)
+    pc.update()
+    assert tuple(hero.pos) == (30, 40), "暂停只冻结帧推进"
+    assert hero.visible is True
+
+
+def test_playback_controls_on_single_image_and_state_machine(_fresh_scene):
+    flat = pc.Character(_surface())
+    assert flat.is_anim_playing() is True
+    flat.pause_anim()
+    flat.stop_anim()
+    assert flat.frame == 0 and flat.is_anim_playing() is False, "单图对象上不报错"
+    flat.play_anim()
+    assert flat.is_anim_playing() is True
+
+    machine = pc.Character({"idle": [_surface((255, 0, 0))], "walk": [_surface((0, 255, 0))]})
+    machine.pause_anim()
+    machine.state = "walk"
+    for _ in range(3):
+        pc.update()
+    assert machine.state == "idle", "暂停时状态切换也冻结"
+    machine.play_anim()
+    pc.update()
+    assert machine.state == "walk", "恢复播放后，暂停期间赋的状态才生效"
+    machine.stop_anim()
+    assert machine.frame == 0 and machine.is_anim_playing() is False
+
+
+def test_missing_visual_playback_controls_are_neutral():
+    hero = pc.Character(size=(16, 16))
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        hero.play_anim()
+        hero.pause_anim()
+        hero.stop_anim()
+        assert hero.is_anim_playing() is False
+    assert len(caught) == 1, "同一对象只提示一次"
+
+
 # ------------------------------------------------------------------ 状态机
 def test_state_machine_switches_on_next_frame(_fresh_scene):
     hero = pc.Character({"idle": [_surface((255, 0, 0))], "walk": [_surface((0, 255, 0))]})

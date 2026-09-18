@@ -83,6 +83,11 @@ class ListSpriteStrategy:
     def set_frame(self, index: int) -> None:
         self.frame = int(index) % len(self.frames)
 
+    def rewind(self) -> None:
+        """回到第 0 帧并清零帧计时（``stop_anim()`` 用）。"""
+        self.frame = 0
+        self._timer = 0.0
+
 
 class AnimatorStrategy:
     """状态机：``{状态名: [帧…]}``，可设下一状态与首末回调。"""
@@ -148,6 +153,11 @@ class AnimatorStrategy:
     def set_next_state(self, name: str, condition: Any = None) -> None:
         self._next_state = name
         self._condition = condition
+
+    def rewind(self) -> None:
+        """当前状态回到第 0 帧并清零帧计时（``stop_anim()`` 用）。"""
+        self._pending = None
+        self.current.rewind()
 
     def set_start_func(self, func: Any) -> None:
         self._start_func = func
@@ -238,6 +248,7 @@ class Sprite:
         self.parent: Any = None
         self.layer = 0
         self.visible = True
+        self.playing = True  # 建出来就在播放（spec 04 §2.4）
         self.red = 255
         self.green = 255
         self.blue = 255
@@ -363,7 +374,31 @@ class Sprite:
         return getattr(self.parent, "scl", (1, 1)) if self.parent is not None else (1, 1)
 
     def advance(self, dt: float) -> None:
+        if not self.playing:
+            return  # 暂停：完全不推进帧，也不切换状态
         self.strategy.advance(dt)
+
+    # ---------------------------------------------------------------- 播放控制
+    def play_anim(self) -> None:
+        """开始 / 继续播放动画（从当前帧继续）。"""
+        self.playing = True
+
+    def pause_anim(self) -> None:
+        """暂停动画：画面停在当前帧。"""
+        self.playing = False
+
+    def stop_anim(self) -> None:
+        """停止动画并回到第 0 帧。"""
+        self.playing = False
+        rewind = getattr(self.strategy, "rewind", None)
+        if rewind is not None:
+            rewind()
+        else:
+            self.frame = 0
+
+    def is_anim_playing(self) -> bool:
+        """动画是否在播放。"""
+        return bool(self.playing)
 
     def _has_pending_transform(self) -> bool:
         scale = self._parent_scl()

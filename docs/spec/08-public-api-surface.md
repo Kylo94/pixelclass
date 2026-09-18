@@ -24,6 +24,8 @@
 
 `Sprite` · `SpriteSheet` · `EasySpriteStrategy` · `ListSpriteStrategy` · `AnimatorStrategy` · `TiledMapStrategy`
 
+- 实体上的播放控制（spec 04 §2.4）：`play_anim` · `pause_anim` · `stop_anim` · `is_anim_playing`
+
 ### 2.4 物理与约束（spec 03）
 
 `Body` · `BodiesGroup` · `TiledMapBodies` · `TiledMapBodiesGroup` · `connect` · `Connect` · `Spring`
