@@ -152,6 +152,60 @@ def test_group_update_order_and_removal():
     assert log == [] and len(group) == 0, "已销毁对象应从集合里移除"
 
 
+def test_update_survives_kill_of_a_later_item():
+    """遍历快照期间，前面的对象 kill() 掉排在后面的对象 —— 不能抛 ValueError。
+
+    1100×600 的植物大战僵尸示例就是这样稳定崩的：植物在自己的 update() 里
+    kill() 掉虚影，而虚影是在植物之后加入场景的，仍留在本轮快照里。
+    """
+    log = []
+
+    class Item:
+        alive = True
+
+        def __init__(self, name):
+            self.name = name
+
+        def update(self):
+            log.append(self.name)
+
+    group = pc.Group()
+    killer = Item("killer")
+    victim = Item("victim")
+    group.add(killer)
+    group.add(victim)
+
+    def kill_victim():
+        victim.alive = False
+        group.remove(victim)  # Entity.kill() 就是这么做的：立刻从集合里摘掉
+
+    killer.update = kill_victim
+    group.update()  # 修复前这里抛 ValueError: list.remove(x): x not in list
+    assert len(group) == 1 and victim not in group
+
+    # 反过来：排在后面的对象 kill() 掉自己，遍历也不能乱
+    log.clear()
+    group.add(victim)
+    victim.update = lambda: (log.append("victim"), group.remove(victim))
+    group.update()
+    assert len(group) == 1, "自杀的对象应当被清出去"
+
+
+def test_kill_inside_own_update_is_safe():
+    scene = pc.setup(320, 240)
+    surface = pygame.Surface((8, 8), pygame.SRCALPHA)
+
+    class Bullet(pc.Character):
+        def update(self):
+            self.kill()  # 子弹命中后在自己的 update() 里销毁自己
+
+    bullet = Bullet(surface)
+    pc.update()
+    assert bullet.alive is False
+    assert bullet not in scene.entities
+    pc.setup(320, 240)  # 给后面的测试一个干净场景
+
+
 def test_screen_offset_math():
     scene = pc.Scene()
     scene.camera.size = (640, 480)

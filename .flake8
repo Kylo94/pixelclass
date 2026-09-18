@@ -5,4 +5,4 @@ per-file-ignores =
     # 包入口就是"聚合再导出"，导入即使用
     src/pixelclass/__init__.py: F401
     tests/*: E402
-exclude = .git,__pycache__,build,dist,.venv
+exclude = .git,__pycache__,build,dist,.venv,pvzdemo

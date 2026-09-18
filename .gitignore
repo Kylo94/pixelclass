@@ -8,6 +8,9 @@ dist/
 .pytest_cache/
 .mypy_cache/
 .benchmarks/
+
+# 本地课堂测试项目（自己放进来调试用的，不进仓库）
+pvzdemo/
 acceptance/*.out.json
 
 # 发布令牌：绝不进仓库

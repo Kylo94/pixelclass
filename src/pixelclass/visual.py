@@ -270,6 +270,8 @@ class Sprite:
         self.layer = 0
         self.visible = True
         self.playing = True  # 建出来就在播放（spec 04 §2.4）
+        self.frame_dirty = False  # 动画换帧：显示缓存要重算
+        self._computed_scale: Optional[tuple] = None  # 上次重算时用的缩放（判断缩放有没有变）
         self.red = 255
         self.green = 255
         self.blue = 255
@@ -322,6 +324,7 @@ class Sprite:
         setter = getattr(self.strategy, "set_frame", None)
         if setter is not None:
             setter(index)
+            self.frame_dirty = True  # 手动换帧同样要让显示缓存失效
 
     @property
     def state(self) -> str:
@@ -404,12 +407,17 @@ class Sprite:
 
     @color.setter
     def color(self, value: Any) -> None:
-        self.red, self.green, self.blue, self.alpha = (
-            int(value[0]),
-            int(value[1]),
-            int(value[2]),
-            int(value[3]),
-        )
+        # 三元素 (r, g, b) = 只改颜色、保留当前透明度；四元素 (r, g, b, a) 全写
+        if len(value) not in (3, 4):
+            raise ValueError(
+                bilingual(
+                    f"颜色要写成 (红, 绿, 蓝) 或 (红, 绿, 蓝, 透明度)，收到 {value!r}",
+                    f"Color must be (r, g, b) or (r, g, b, a); got {value!r}",
+                )
+            )
+        self.red, self.green, self.blue = int(value[0]), int(value[1]), int(value[2])
+        if len(value) == 4:
+            self.alpha = int(value[3])
         self.modified = True
 
     def set_parent(self, parent: Any) -> None:
@@ -431,7 +439,17 @@ class Sprite:
     def advance(self, dt: float) -> None:
         if not self.playing:
             return  # 暂停：完全不推进帧，也不切换状态
+        before = self._frame_key()
         self.strategy.advance(dt)
+        if self._frame_key() != before:
+            # 换帧 / 换状态了：显示缓存必须重算。漏掉这一步的后果是——
+            # frame 索引在涨，但画面上永远是同一帧（动画视觉上冻住）。
+            self.frame_dirty = True
+
+    def _frame_key(self) -> Any:
+        """当前帧的身份：换帧判断用（同一张 Surface 的 id 稳定，跨帧不同）。"""
+        image = getattr(self.strategy, "image", None)
+        return (id(image), int(getattr(self.strategy, "frame", 0)))
 
     # ---------------------------------------------------------------- 播放控制
     def play_anim(self) -> None:
@@ -457,12 +475,16 @@ class Sprite:
 
     def _has_pending_transform(self) -> bool:
         scale = self._parent_scl()
+        current_scale = (float(scale[0]), float(scale[1]))
         return bool(
             self.scaled
             or self.rotated
             or self.fliped
             or self.modified
-            or (float(scale[0]), float(scale[1])) != (1.0, 1.0)
+            or self.frame_dirty
+            # 和「上次重算时用的缩放」比，而不是和 1 比：否则任何被缩放的贴图
+            # 每帧都会重算一次图像（缩放是重活，spec 04 §1.3）
+            or current_scale != self._computed_scale
         )
 
     def _transform(self) -> pygame.Surface:
@@ -480,14 +502,18 @@ class Sprite:
             image = pygame.transform.scale(image, (width, height))
         if self.rotated:
             image = pygame.transform.rotate(image, self._parent_rot())
-        if self.modified and (self.red, self.green, self.blue, self.alpha) != (255, 255, 255, 255):
+        # 着色/透明度是"当前颜色状态"的函数，每次重算都要重新贴上去。
+        # 不能只在 modified 为真时贴：换帧、缩放、旋转也会走到这里，
+        # 那样第一次重算之后颜色/透明度就丢了（虚影会突然变回不透明）。
+        if (self.red, self.green, self.blue, self.alpha) != (255, 255, 255, 255):
             tinted = image.copy()
             tinted.fill((self.red, self.green, self.blue, self.alpha), special_flags=pygame.BLEND_RGBA_MULT)
             image = tinted
 
         self._display = image
         self._mask = None
-        self.scaled = self.rotated = self.fliped = self.modified = False
+        self.scaled = self.rotated = self.fliped = self.modified = self.frame_dirty = False
+        self._computed_scale = (float(scale[0]), float(scale[1]))
         return image
 
     def update(self) -> None:

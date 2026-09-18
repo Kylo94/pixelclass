@@ -53,6 +53,12 @@ pixelclass = ["py.typed", "static/*"]
 [tool.black]
 line-length = 110
 target-version = ["py39"]
+# pvzdemo/ 是本地课堂测试项目（不属于本仓库），不参与格式检查
+extend-exclude = '''
+/(
+    pvzdemo
+)/
+'''
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

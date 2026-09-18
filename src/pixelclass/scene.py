@@ -52,9 +52,17 @@ class Group:
 
     # ------------------------------------------------------------ 更新
     def update(self) -> None:
+        """逐一遍历。遍历的是**快照**，所以对象可以在这期间出生或销毁（spec 01 §4.2）。
+
+        死对象的清理必须走 ``self.remove()``（它先判断在不在），不能直接
+        ``self._items.remove()``：同一次遍历里，排在前面的对象可能已经把排在后面的对象
+        ``kill()`` 掉了——那个对象还在快照里、却已经不在列表里，直接 remove 会抛
+        ``ValueError: list.remove(x): x not in list``。这个崩溃在植物大战僵尸示例里稳定复现
+        （植物在自己的 update() 里 kill() 掉虚影，虚影排在它后面）。
+        """
         for item in list(self._items):
             if not getattr(item, "alive", True):
-                self._items.remove(item)
+                self.remove(item)
                 continue
             if self._update_hook is not None:
                 self._update_hook(item)

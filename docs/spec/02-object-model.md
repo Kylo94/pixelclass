@@ -93,7 +93,7 @@ Mouse(图片=None, world=None)                         # 跟随鼠标
 
 | 接口 | 说明 |
 |---|---|
-| `red` / `green` / `blue` / `alpha` / `color` | 着色与透明度；写颜色会标记"需要重绘" |
+| `red` / `green` / `blue` / `alpha` / `color` | 着色与透明度；写颜色会标记"需要重绘"。`color` 可写 `(r, g, b)` 或 `(r, g, b, a)` |
 | `visible` / `show()` / `hide()` | 是否参与绘制 |
 | `width` / `height` | 贴图尺寸（只读） |
 | `flipx(布尔)` / `flipy(布尔)` | 水平 / 垂直翻转 |

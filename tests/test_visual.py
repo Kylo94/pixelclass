@@ -64,6 +64,79 @@ def test_scale_flip_and_color_update_display_image(_fresh_scene):
     assert hero.visual.modified is False
 
 
+def test_scaled_sprite_is_not_rescaled_every_frame(monkeypatch, _fresh_scene):
+    """被缩放的贴图不能每帧都重算图像（缩放是重活，spec 04 §1.3）。"""
+    calls = []
+    original = pygame.transform.scale
+
+    def counting_scale(image, size):
+        calls.append(size)
+        return original(image, size)
+
+    monkeypatch.setattr(pygame.transform, "scale", counting_scale)
+    hero = pc.Character(_surface())
+    hero.scale(0.5)
+    pc.update()
+    assert len(calls) == 1, "缩放后应当重算一次"
+    for _ in range(5):
+        pc.update()
+    assert len(calls) == 1, "缩放没变就不该再重算（以前是每帧都重算）"
+
+    hero.scale(0.25)
+    pc.update()
+    assert len(calls) == 2, "缩放真的变了才重算"
+
+
+def test_animation_frame_change_is_visible(_fresh_scene):
+    """换帧后**画面**必须跟着换：只涨 frame 索引不算数。"""
+    frames = [_surface((255, 0, 0)), _surface((0, 0, 255))]
+    hero = pc.Character(frames)
+    hero.goto(0, 0)
+    hero.dt = 0.01
+    colors = []
+    for _ in range(4):
+        pc.update()
+        image = hero.visual.display_image()
+        colors.append(tuple(image.get_at((image.get_width() // 2, image.get_height() // 2)))[:3])
+    assert len(set(colors)) > 1, f"动画在画面上冻住了：{colors}"
+    assert colors[0] != colors[-1]
+
+
+def test_alpha_survives_recompute_on_scaled_sprite(_fresh_scene):
+    """虚影（缩放 + 半透明）不能画着画着变回不透明。
+
+    真实案例：植物大战僵尸示例里 `shadow.alpha = 128` + `shadow.scale(0.8)`，
+    前一版只在 modified 那一次贴透明度，而缩放贴图每帧都会重算，
+    于是第二帧起虚影就是完全不透明的。
+    """
+    hero = pc.Character(_surface((255, 0, 0)))
+    hero.scale(0.8)
+    hero.alpha = 128
+    for _ in range(5):
+        pc.update()
+        image = hero.visual.display_image()
+        biggest = max(
+            image.get_at((x, y)).a for x in range(image.get_width()) for y in range(image.get_height())
+        )
+        assert biggest <= 130, f"透明度丢了：最大 alpha = {biggest}"
+
+
+def test_color_accepts_three_or_four_elements(_fresh_scene):
+    hero = pc.Character(_surface())
+    hero.color = (10, 20, 30)
+    assert hero.color == (10, 20, 30, 255), "三元素只改颜色，保留透明度"
+
+    hero.alpha = 200
+    hero.color = (1, 2, 3)
+    assert hero.color == (1, 2, 3, 200), "三元素不该把透明度重置"
+
+    hero.color = (4, 5, 6, 7)
+    assert hero.color == (4, 5, 6, 7)
+
+    with pytest.raises(ValueError):
+        hero.color = (1, 2)
+
+
 # ------------------------------------------------------------------ 绘制与图层
 def test_draw_paints_visible_sprites_with_layer_order(_fresh_scene):
     low = pc.Character(_surface((255, 0, 0)), size=(32, 32))
