@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down"
+     width="20" height="12" tilewidth="16" tileheight="16" infinite="0" nextlayerid="3" nextobjectid="7">
+ <tileset firstgid="1" name="classroom" tilewidth="16" tileheight="16" tilecount="4" columns="4">
+  <image source="tiles.png" width="64" height="16"/>
+ </tileset>
+ <layer id="1" name="ground" width="20" height="12">
+  <data encoding="csv">
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+</data>
+ </layer>
+ <objectgroup id="2" name="things">
+  <object id="1" name="spawn" x="32" y="144" width="16" height="16"/>
+  <object id="2" name="ground_body" x="0" y="176" width="320" height="48"/>
+  <object id="3" name="platform_a" x="64" y="96" width="64" height="16"/>
+  <object id="4" name="platform_b" x="192" y="80" width="64" height="16"/>
+  <object id="5" name="coin_a" gid="4" x="80" y="80" width="16" height="16"/>
+  <object id="6" name="coin_b" gid="4" x="208" y="64" width="16" height="16"/>
+ </objectgroup>
+</map>
