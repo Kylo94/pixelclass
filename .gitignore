@@ -9,3 +9,8 @@ dist/
 .mypy_cache/
 .benchmarks/
 acceptance/*.out.json
+
+# 发布令牌：绝不进仓库
+.pypi-token
+.pypi-token-test
+.env
