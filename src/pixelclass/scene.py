@@ -77,6 +77,12 @@ class Scene:
         self.entities = Group()
         self.visuals = Group()
 
+        # 物理层集合：刚体 / 瓦片组（延迟导入避免循环：scenario 不依赖物理模块）
+        from .physics.groups import BodiesGroup, TiledMapBodiesGroup
+
+        self.rigids = BodiesGroup()
+        self.tiles = TiledMapBodiesGroup()
+
         self.camera = Camera(world=self)
         self.clock = Clock()
 
@@ -93,13 +99,22 @@ class Scene:
         self.gravity = vec(x, y)
         self.space.gravity = to_cp(self.gravity)
 
-    # ------------------------------------------------------------ 生命周期
+    # ------------------------------------------------------------ 同步与生命周期
+    def sync_display(self) -> None:
+        """物理 -> 显示：只改显示缓存，不反向写回刚体（spec 01 §4）。"""
+        for body in list(self.rigids):
+            body.sync()
+        for group in list(self.tiles):
+            group.sync()
+
     def reset(self, size: tuple) -> None:
         """重新初始化该场景（换一套空间与集合，保留相机对象本身）。"""
         self.space = pymunk.Space()
         self.space.gravity = to_cp(self.gravity)
         self.entities.clear()
         self.visuals.clear()
+        self.rigids.clear()
+        self.tiles.clear()
         self.lines.clear()
         self.camera.reset(size)
         self.clock = Clock()

@@ -10,20 +10,14 @@ import pygame
 
 from . import stepping
 from .clock import PHYSICS_DT
+from .context import resolve_world
 from .scene import Scene
 from .window import Window
 from .vec import vec
 
 cwd = os.getcwd()  # 资源相对路径的基准（导入时确定；不随运行中 chdir 变化）
 
-global_var = Scene()  # 当前场景（spec 01 §2.2：接口不传 world 时用它）
 _window: Optional[Window] = None
-
-
-# ---------------------------------------------------------------------- 基础
-def resolve_world(world: Any = None) -> Scene:
-    """``None`` 表示"当前场景"。"""
-    return global_var if world is None else world
 
 
 def init() -> None:
@@ -65,6 +59,7 @@ def update(world: Any = None) -> None:
     for _ in range(scene.clock.tick()):
         stepping.step_space(scene.space, PHYSICS_DT, scene.max_step_distance, scene.max_substeps)
 
+    scene.sync_display()
     scene.entities.update()
     scene.visuals.update()
     scene.camera._sync_to_subject()

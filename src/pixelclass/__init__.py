@@ -12,11 +12,12 @@ from pygame.locals import *  # noqa: F401,F403  —— 事件与按键常量（�
 
 from ._version import __version__
 from .camera import Camera
+from .context import global_var
+from .physics import Body, BodiesGroup, TiledMapBodies, TiledMapBodiesGroup
 from .runtime import (
     cwd,
     done,
     draw_line,
-    global_var,
     init,
     save_screen,
     set_gravity,
@@ -49,6 +50,11 @@ _FRAMEWORK_NAMES = [
     "Window",
     "Screen",
     "Camera",
+    # 物理（spec 03）
+    "Body",
+    "BodiesGroup",
+    "TiledMapBodies",
+    "TiledMapBodiesGroup",
     # 工具（spec 01 / 07）
     "draw_line",
     "set_gravity",
