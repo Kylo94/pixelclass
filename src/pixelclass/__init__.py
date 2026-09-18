@@ -13,6 +13,7 @@ from pygame.locals import *  # noqa: F401,F403  —— 事件与按键常量（�
 from ._version import __version__
 from .camera import Camera
 from .context import global_var
+from .entity import Character, Entity, Mouse, Sensor, Wall
 from .physics import Body, BodiesGroup, TiledMapBodies, TiledMapBodiesGroup
 from .runtime import (
     cwd,
@@ -22,16 +23,21 @@ from .runtime import (
     save_screen,
     set_gravity,
     setup,
+    speed,
     title,
     update,
 )
+from .input import get_mouse_pos, get_mouse_rel, set_mouse_visible
 from .scene import Group, Scene
 from .vec import Cartesian2pygame, pygame2Cartesian, sign, to_cp, vec
+from .visual import Sprite
 from .window import Window
 
 # 讲义兼容别名（spec 08 §2.1）
 World = Scene
-Screen = Window  # 兼容名：窗口对象（相机相关构造参数在相机里程碑补齐）
+Screen = Window
+GameObject = Entity
+NewGameObject = Entity  # 兼容名：窗口对象（相机相关构造参数在相机里程碑补齐）
 
 _FRAMEWORK_NAMES = [
     # 场景与主循环（spec 01）
@@ -46,6 +52,19 @@ _FRAMEWORK_NAMES = [
     "init",
     "cwd",
     "Group",
+    # 实体与预设（spec 02）
+    "Entity",
+    "GameObject",
+    "NewGameObject",
+    "Character",
+    "Wall",
+    "Sensor",
+    "Mouse",
+    # 视觉与输入
+    "Sprite",
+    "get_mouse_pos",
+    "get_mouse_rel",
+    "set_mouse_visible",
     # 窗口与相机
     "Window",
     "Screen",
@@ -58,6 +77,7 @@ _FRAMEWORK_NAMES = [
     # 工具（spec 01 / 07）
     "draw_line",
     "set_gravity",
+    "speed",
     "sign",
     "Cartesian2pygame",
     "pygame2Cartesian",

@@ -93,6 +93,8 @@ class Scene:
         self.lines: List[Any] = []  # draw_line() 画的线，下一帧清除
         self.debug = False
         self.is_updated = False  # 本帧是否已被推进过（教学/调试用）
+        self.speed_limit = 1  # forward()/backward() 每次循环最多走多少像素（spec 07 §5 的 speed()）
+        self.auto_update = False  # 教学演示：位移过程中自动推进画面（默认关闭，行为可复现）
 
     # ------------------------------------------------------------ 物理
     def set_gravity(self, x: float, y: float) -> None:

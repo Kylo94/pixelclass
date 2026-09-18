@@ -82,6 +82,11 @@ class Body:
 
     # ------------------------------------------------------------------ 形状
     def _make_shape(self, kind: str, size: Any, sensor: bool) -> Any:
+        shape = self._create_shape(kind, size)
+        shape.sensor = bool(sensor)
+        return shape
+
+    def _create_shape(self, kind: str, size: Any) -> Any:
         if kind == "CIRCLE":
             radius = int(size if size is not None else 1)
             if radius <= 0:

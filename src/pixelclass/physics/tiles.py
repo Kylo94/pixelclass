@@ -83,6 +83,14 @@ class TiledMapBodies:
         for tile in self.bodies:
             tile.set_rot(degrees)
 
+    def set_scale(self, scalex: float, scaley: Optional[float] = None) -> None:
+        """缩放每块瓦片的几何（整张地图一起缩放）。"""
+        scaley = scalex if scaley is None else scaley
+        for tile in self.bodies:
+            vertices = tile.shape.get_vertices()
+            tile.shape.unsafe_set_vertices([(float(v[0]) * scalex, float(v[1]) * scaley) for v in vertices])
+            self.world.space.reindex_shapes_for_body(tile.body)
+
     def set_parent(self, parent: Any) -> None:
         self.parent = parent
         self.set_pos(getattr(parent, "pos", self.pos))

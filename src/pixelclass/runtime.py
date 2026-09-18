@@ -99,6 +99,13 @@ def draw_line(p1: Any, p2: Any, color: Any = (255, 255, 255), width: int = 1, wo
     scene.lines.append((vec(p1), vec(p2), tuple(color), int(width)))
 
 
+def speed(value: int, world: Any = None) -> int:
+    """限制每帧位移的步长（"慢动作"，方便课堂观察移动过程）。"""
+    scene = resolve_world(world)
+    scene.speed_limit = max(1, int(value))
+    return scene.speed_limit
+
+
 def set_gravity(x: Any, *y: Any, world: Any = None) -> None:
     """设置重力。支持 ``set_gravity(0, -1200)`` 与 ``set_gravity((0, -1200))``。"""
     scene = resolve_world(world)
