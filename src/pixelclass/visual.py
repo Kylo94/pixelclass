@@ -413,6 +413,15 @@ class Sprite:
         if not self.visible:
             return
         image = self.display_image()
+        zoom = float(getattr(camera, "zoom", 1.0) or 1.0)
+        if abs(zoom - 1.0) > 1e-6:
+            size = (max(1, int(image.get_width() * zoom)), max(1, int(image.get_height() * zoom)))
+            transform = (
+                pygame.transform.smoothscale
+                if getattr(camera, "smooth_zoom", False)
+                else pygame.transform.scale
+            )
+            image = transform(image, size)
         rect = image.get_rect()
         center = camera.to_screen(self._parent_pos())
         rect.center = (int(center[0]), int(center[1]))

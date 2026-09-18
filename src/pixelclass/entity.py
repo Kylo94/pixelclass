@@ -578,6 +578,29 @@ class Entity:
         point = (float(x), float(y[0])) if y else (float(x[0]), float(x[1]))
         self.rigid.body.apply_impulse_at_local_point(point)
 
+    # ------------------------------------------------------------------ 音效
+    def play_snd(self, path: Any, loop: bool = False) -> Any:
+        """播放一个音效（无音频设备时安全无操作）。"""
+        from .audio import load_sound
+
+        sound = load_sound(path)
+        if sound is None:
+            return None
+        sound.set_volume(float(self.volume))
+        sound.play(loops=-1 if loop else 0)
+        self.sounds.append(sound)
+        return sound
+
+    def set_volume(self, value: float) -> float:
+        """设置该对象音效的音量（0~1）。"""
+        self.volume = max(0.0, min(1.0, float(value)))
+        for sound in list(self.sounds):
+            try:
+                sound.set_volume(self.volume)
+            except (AttributeError, pygame.error):  # 设备已失效
+                pass
+        return self.volume
+
     # ------------------------------------------------------------------ 碰撞
     def collide(self, other: Any) -> bool:
         """点查询（传坐标）或对象碰撞（传另一个实体）。"""
@@ -677,6 +700,12 @@ class Entity:
 
     def kill(self) -> None:
         """销毁：组件销毁、槽位清空、标记不再存活，最后回调 :meth:`_on_kill`。"""
+        for sound in list(self.sounds):
+            try:
+                sound.stop()
+            except (AttributeError, pygame.error):  # 设备已失效
+                pass
+        self.sounds.clear()
         if self.visual is not None:
             self.visual.kill()
         if self.rigid is not None:

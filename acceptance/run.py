@@ -269,15 +269,22 @@ def obs_after_kill():
 
 
 def obs_frame_hash():
-    """固定场景渲染一帧后的像素哈希（B 组：在本引擎自己的夹具上冻结）。"""
+    """固定场景渲染一帧后的像素哈希（B 组：在本引擎自己的夹具上冻结）。
+
+    用**独立场景**（而不是默认场景），这样前面任何观测的残留状态都影响不到这一项——
+    像素哈希必须是构造上就可复现的。
+    """
     import hashlib
 
-    _scene()
-    pc.bgpic(TILES)
-    marker = pc.Character(TILES, size=(32, 32))
+    scene = pc.Scene()
+    pc.setup(640, 480, world=scene)
+    pc.set_gravity(0, 0, world=scene)
+    scene.clock = Clock(ticker=lambda: TICK_MS)
+    pc.bgpic(TILES, world=scene)
+    marker = pc.Character(TILES, size=(32, 32), world=scene)
     marker.goto(30, 20)
     marker.rot = 15
-    pc.update()
+    pc.update(scene)
     surface = pygame.display.get_surface()
     return hashlib.sha256(pygame.image.tostring(surface, "RGB")).hexdigest()[:16]
 

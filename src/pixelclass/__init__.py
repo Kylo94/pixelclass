@@ -11,8 +11,36 @@ from pygame import locals as _pygame_locals
 from pygame.locals import *  # noqa: F401,F403  —— 事件与按键常量（学生不写前缀也能用）
 
 from ._version import __version__
+from .audio import (
+    audio_available,
+    set_volume,
+    bgmusic,
+    music_fadeout,
+    music_get_busy,
+    music_get_endevent,
+    music_get_pos,
+    music_get_volume,
+    music_load,
+    music_pause,
+    music_play,
+    music_queue,
+    music_rewind,
+    music_set_endevent,
+    music_set_pos,
+    music_set_volume,
+    music_stop,
+    music_unpause,
+)
 from .camera import Camera
 from .context import global_var
+from .error_help import (
+    explain_exception,
+    install_error_help,
+    is_error_help_enabled,
+    set_error_help,
+    uninstall_error_help,
+)
+from .fonts import find_font, load_font
 from .entity import Character, Entity, Mouse, Sensor, Wall
 from .physics import Body, BodiesGroup, TiledMapBodies, TiledMapBodiesGroup
 from .physics.joints import Connect, Spring, connect
@@ -96,6 +124,33 @@ _FRAMEWORK_NAMES = [
     "connect",
     "Connect",
     "Spring",
+    # 音频（spec 06 §3）
+    "bgmusic",
+    "set_volume",
+    "audio_available",
+    "music_load",
+    "music_play",
+    "music_queue",
+    "music_stop",
+    "music_pause",
+    "music_unpause",
+    "music_rewind",
+    "music_fadeout",
+    "music_set_pos",
+    "music_get_pos",
+    "music_set_volume",
+    "music_get_volume",
+    "music_get_busy",
+    "music_set_endevent",
+    "music_get_endevent",
+    # 报错与字体（spec 07）
+    "install_error_help",
+    "uninstall_error_help",
+    "set_error_help",
+    "is_error_help_enabled",
+    "explain_exception",
+    "find_font",
+    "load_font",
     # 工具（spec 01 / 07）
     "draw_line",
     "set_gravity",
@@ -115,3 +170,7 @@ _PYGAME_CONSTANTS = [
 ]
 
 __all__ = [*_FRAMEWORK_NAMES, *_PYGAME_CONSTANTS]
+
+# 默认安装中文报错钩子（可用 set_error_help(False) 或 PIXELCLASS_ERROR_HELP=0 关闭）
+if is_error_help_enabled():
+    install_error_help()

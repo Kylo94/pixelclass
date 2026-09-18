@@ -65,6 +65,7 @@ def update(world: Any = None) -> None:
     scene.sync_display()
     scene.entities.update()
     scene.visuals.update()
+    scene.camera.advance(scene.clock.dt)  # 抖动/缩放按真实经过时间推进
     scene.camera._sync_to_subject()
 
     for _ in range(steps):
